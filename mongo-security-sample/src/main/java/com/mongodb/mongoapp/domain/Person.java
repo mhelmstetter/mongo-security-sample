@@ -2,6 +2,7 @@ package com.mongodb.mongoapp.domain;
 
 import org.bson.types.ObjectId;
 import org.springframework.data.annotation.Id;
+import org.springframework.data.annotation.Reference;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document
@@ -12,7 +13,11 @@ public class Person {
 
     private String firstName;
     private String lastName;
-    private String country;
+    
+    private SecurityLabeledValue country;
+    
+    private SecurityLabeledValue ssn;
+    
     
     private Favorites favorites;
 
@@ -40,11 +45,11 @@ public class Person {
         this.lastName = lastName;
     }
 
-    public String getCountry() {
+    public SecurityLabeledValue getCountry() {
         return country;
     }
 
-    public void setCountry(String country) {
+    public void setCountry(SecurityLabeledValue country) {
         this.country = country;
     }
 
@@ -54,6 +59,14 @@ public class Person {
 
     public void setFavorites(Favorites favorites) {
         this.favorites = favorites;
+    }
+
+    public SecurityLabeledValue getSsn() {
+        return ssn;
+    }
+
+    public void setSsn(SecurityLabeledValue ssn) {
+        this.ssn = ssn;
     }
 
 }

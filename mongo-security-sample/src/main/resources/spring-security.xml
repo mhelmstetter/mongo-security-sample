@@ -5,14 +5,17 @@
 	http://www.springframework.org/schema/security
 	http://www.springframework.org/schema/security/spring-security-3.2.xsd">
 
-	<http auto-config="true">
-		<intercept-url pattern="/home*" access="ROLE_ADMIN" />
+	<http auto-config="true" use-expressions="true">
+		<intercept-url pattern="/home*" access="hasRole('ROLE_ADMIN')" />
+		
 		<form-login 
 		    login-page="/login" 
 		    default-target-url="/welcome" 
 			authentication-failure-url="/login?error" 
 			username-parameter="username"
-			password-parameter="password" />
+			password-parameter="password" 
+			
+			/>
 	</http>
 
 	<authentication-manager>

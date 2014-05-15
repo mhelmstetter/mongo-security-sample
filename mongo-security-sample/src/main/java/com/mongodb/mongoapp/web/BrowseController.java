@@ -1,5 +1,7 @@
 package com.mongodb.mongoapp.web;
 
+import java.util.Map;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -21,15 +23,15 @@ public class BrowseController {
     PersonRepository personRepository;
 
     @RequestMapping(value="/browse", method = RequestMethod.GET)
-    public ModelAndView helloWorld() {
+    public ModelAndView browse(Map<String, Object> model) {
+        Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
         
-        Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 10));
+        //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));
         
-        
+        //Iterable<Person> persons = personRepository.findAll();
         
         ModelAndView mav = new ModelAndView();
-        mav.setViewName("helloWorld");
-        mav.addObject("message", "Hello World!");
+        mav.setViewName("browse");
         mav.addObject("persons", persons);
         return mav;
     }

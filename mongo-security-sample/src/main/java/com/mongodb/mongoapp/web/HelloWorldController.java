@@ -35,7 +35,6 @@ public class HelloWorldController {
  
     }
  
-    //Spring Security see this :
     @RequestMapping(value = "/login", method = RequestMethod.GET)
     public ModelAndView login(
         @RequestParam(value = "error", required = false) String error,

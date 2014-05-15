@@ -1,4 +1,6 @@
 <%@ taglib prefix="spring" uri="http://www.springframework.org/tags" %>
+<%@ taglib prefix="security" uri="http://www.springframework.org/security/tags" %>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
     <title>PetClinic :: a Spring Framework demonstration</title>
@@ -19,5 +21,16 @@
     <spring:url value="/webjars/jquery-ui/1.9.2/css/smoothness/jquery-ui-1.9.2.custom.css" var="jQueryUiCss"/>
     <link href="${jQueryUiCss}" rel="stylesheet"></link>
 </head>
+
+
+<security:authorize access="isAuthenticated()">
+    logged in as <security:authentication property="principal.username" /> 
+    <c:url value="/j_spring_security_logout" var="logoutUrl" />
+<a href="${logoutUrl}">Logout</a>
+</security:authorize>
+
+<security:authorize access="! isAuthenticated()">
+    not logged in
+</security:authorize>
 
 

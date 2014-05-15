@@ -2,22 +2,18 @@ package com.mongodb.mongoapp.domain;
 
 import java.util.List;
 
-import org.springframework.data.annotation.Reference;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.mapping.Field;
 
+@Document
 public class Favorites {
     
-    @Reference
-    private SecurityLabel sl;
+    @Field("sl")
+    private SecurityLabel securityLabel;
     
     private List<String> cartoonCharacters;
 
-    public SecurityLabel getSl() {
-        return sl;
-    }
 
-    public void setSl(SecurityLabel sl) {
-        this.sl = sl;
-    }
 
     public List<String> getCartoonCharacters() {
         return cartoonCharacters;
@@ -25,6 +21,14 @@ public class Favorites {
 
     public void setCartoonCharacters(List<String> cartoonCharacters) {
         this.cartoonCharacters = cartoonCharacters;
+    }
+
+    public SecurityLabel getSecurityLabel() {
+        return securityLabel;
+    }
+
+    public void setSecurityLabel(SecurityLabel sl) {
+        this.securityLabel = sl;
     }
 
 }

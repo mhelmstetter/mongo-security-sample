@@ -32,19 +32,19 @@
 		<url-pattern>/</url-pattern>
 	</servlet-mapping>
 
-	<!-- Dandelion-Datatables servlet definition 
+	<!-- Dandelion-Datatables servlet definition -->
 	<servlet>
 		<servlet-name>datatablesController</servlet-name>
 		<servlet-class>com.github.dandelion.datatables.extras.servlet2.servlet.DatatablesServlet</servlet-class>
 	</servlet>
-	-->
+	
 
-	<!-- Dandelion-Datatables servlet mapping 
+	<!-- Dandelion-Datatables servlet mapping -->
 	<servlet-mapping>
 		<servlet-name>datatablesController</servlet-name>
 		<url-pattern>/datatablesController/*</url-pattern>
 	</servlet-mapping>
-	-->
+	
 
 	<!-- used so we can use forms of method type 'PUT' and 'DELETE' (such as 
 		in the Pet form) see here: http://static.springsource.org/spring/docs/current/spring-framework-reference/html/view.html#rest-method-conversion -->
@@ -94,8 +94,9 @@
 		<filter-class>com.github.dandelion.datatables.extras.servlet2.filter.DatatablesFilter</filter-class>
 	</filter>
 	-->
+	
 
-	<!-- Dandelion-Datatables filter mapping -
+	<!-- Dandelion-Datatables filter mapping 
 	<filter-mapping>
 		<filter-name>datatablesFilter</filter-name>
 		<url-pattern>/*</url-pattern>

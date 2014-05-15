@@ -1,0 +1,20 @@
+{
+	$cond : [
+		{
+			$allElementsTrue : {
+				$map : {
+					input: {$ifNull:["$sl",[[]]]},
+					"as" : "setNeeded",
+					"in" : {
+						$setIsSubset : [
+							"$$setNeeded",
+							%s
+						]
+					}
+				}
+			}
+		},
+		"$$DESCEND",
+		"$$PRUNE"
+	]
+}
