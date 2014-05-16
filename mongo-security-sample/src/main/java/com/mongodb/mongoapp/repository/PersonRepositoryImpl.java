@@ -58,9 +58,12 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         
         AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
         List<DBObject> pipeline = new ArrayList<DBObject>();
-        
-        //String visibility = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
-        String visibility = "[ { c:\"U\" } ]";
+
+        boolean showUnclassifiedOnly = false;
+
+        String visibility = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+        if (showUnclassifiedOnly) visibility = "[ { c:\"U\" } ]";
+
         String userSecurityExpression = String.format(securityExpression, visibility);
         
         logger.debug("**************** findPersons() " + userSecurityExpression);

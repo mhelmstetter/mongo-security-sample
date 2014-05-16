@@ -10,11 +10,7 @@
 		http://www.springframework.org/schema/data/mongo http://www.springframework.org/schema/data/mongo/spring-mongo.xsd">
 
 
-	<context:component-scan base-package="com.mongodb.mongoapp.service" />
-	
-	<!-- 
-	
-	 -->
+	<context:component-scan base-package="com.mongodb.mongoapp" />
 	 
 	 <!-- 
 	 <mongo:mapping-converter >
@@ -26,11 +22,27 @@
 	</mongo:mapping-converter>
 	 -->
 	
-		<mongo:mongo host="localhost" port="27017"/>
+	<mongo:mongo id="mongo" host="localhost" port="27017"/>
+    <!-- Default bean name is 'mongo' we might want additional options: -->
+    <!--
+        <mongo:mongo id="mongo" host="localhost" port="27017">
+            <mongo:options connections-per-host="10"
+                           threads-allowed-to-block-for-connection-multiplier="5" max-wait-time="12000"
+                           connect-timeout="0" socket-timeout="0" auto-connect-retry="0" />
 
-  <mongo:db-factory dbname="test" mongo-ref="mongo"/>
+        </mongo:mongo>
+    -->
 
+    <mongo:mapping-converter id="mappingConverter">
+        <mongo:custom-converters>
 
+            <mongo:converter>
+                <bean id="mappingConverterSecurityLabelReadConverter" class="com.mongodb.mongoapp.converter.SecurityLabelReadConverter" />
+            </mongo:converter>
+        </mongo:custom-converters>
+    </mongo:mapping-converter>
+
+  <mongo:db-factory id="mongoDbFactory" dbname="test" mongo-ref="mongo"/>
 
 	<!-- MongoTemplate instance -->
 	<bean id="mongoTemplate" class="org.springframework.data.mongodb.core.MongoTemplate">
