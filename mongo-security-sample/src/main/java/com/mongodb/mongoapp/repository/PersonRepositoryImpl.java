@@ -22,7 +22,9 @@ import com.mongodb.util.JSON;
 public class PersonRepositoryImpl implements PersonRepositoryCustom {
     
     protected static final Logger logger = LoggerFactory.getLogger(PersonRepositoryImpl.class);
-    
+
+    private String visibility = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+
     @Autowired
     MongoTemplate mongoTemplate;
     
@@ -79,11 +81,15 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
     }
 
     private String getCAPCOVisibilityString() {
+
+        maybeOverrideCAPCOToUnclassOnly();
+        return visibility;
+    }
+
+    private void maybeOverrideCAPCOToUnclassOnly() {
         boolean showUnclassifiedOnly = false;
 
-        String visibility = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
         if (showUnclassifiedOnly) visibility = "[ { c:\"U\" } ]";
-        return visibility;
     }
 
     /** Add "$redact" mongodb command incantation to pipeline */
@@ -112,6 +118,27 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         return new BasicDBObject("$redact", redactCommand);
     }
 
+    /**
+     * @return  CAPCO visibility       string, e.g.
+     *
+     * <tt>"[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]"</tt>
+     *
+     */
+    public String getVisibility() {
+        return visibility;
+    }
+
+    /** set the CAPCO visibility string, e.g.
+     *
+     * <tt>"[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]"</tt>
+     *
+     * @param visibility
+     */
+    public void setVisibility(String visibility) {
+        this.visibility = visibility;
+    }
+
+    /** sets the SecurityExpression string that is specific to the $redact operator */
     public void setSecurityExpression(String securityExpression) {
         this.securityExpression = securityExpression;
     }
