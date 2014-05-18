@@ -22,8 +22,22 @@ public class BrowseController {
     @Autowired
     PersonRepository personRepository;
 
+    private static boolean flipFlop = false;       // to flipFlop thru 2 different CAPCO levels
+
     @RequestMapping(value="/browse", method = RequestMethod.GET)
     public ModelAndView browse(Map<String, Object> model) {
+
+
+        flipFlop = !flipFlop;
+
+        if (flipFlop) {
+            String capcoVisibilityString = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+            personRepository.setCapcoVisibilityString(capcoVisibilityString);
+        } else {
+            // just for testing now use U
+            personRepository.setCapcoVisibilityString("[ { c:\"U\" } ]");
+        }
+
         Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
         
         //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));

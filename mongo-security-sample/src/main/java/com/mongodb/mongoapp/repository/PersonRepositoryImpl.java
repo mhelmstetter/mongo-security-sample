@@ -23,7 +23,7 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
     
     protected static final Logger logger = LoggerFactory.getLogger(PersonRepositoryImpl.class);
 
-    private String visibility = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+    private String capcoVisibilityString = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
 
     @Autowired
     MongoTemplate mongoTemplate;
@@ -36,7 +36,7 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
         List<DBObject> pipeline = new ArrayList<DBObject>();
 
-        String visibility = getCAPCOVisibilityString();
+        String visibility = getCapcoVisibilityString();
         //String visibility = "[\"S\"]";
         DBObject redact = getRedactCommand(visibility);
 
@@ -58,7 +58,7 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
         List<DBObject> pipeline = new ArrayList<DBObject>();
 
-        String visibility = getCAPCOVisibilityString();
+        String visibility = getCapcoVisibilityString();
         DBObject redact = getRedactCommand(visibility);
 
         addRedactionMatchToPipeline(pipeline, redact);
@@ -80,17 +80,7 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         return persons;
     }
 
-    private String getCAPCOVisibilityString() {
 
-        maybeOverrideCAPCOToUnclassOnly();
-        return visibility;
-    }
-
-    private void maybeOverrideCAPCOToUnclassOnly() {
-        boolean showUnclassifiedOnly = false;
-
-        if (showUnclassifiedOnly) visibility = "[ { c:\"U\" } ]";
-    }
 
     /** Add "$redact" mongodb command incantation to pipeline */
     private void addRedactionMatchToPipeline(List<DBObject> pipeline, DBObject redact) {
@@ -118,25 +108,38 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         return new BasicDBObject("$redact", redactCommand);
     }
 
+    /** This may be used to override any set CAPCO visibility settings as needed by the organization */
+    private void maybeOverrideCAPCOToUnclassOnly() {
+
+        // e.g. you might want to keep it limited to unclassified
+        boolean showUnclassifiedOnly = false;
+
+        if (showUnclassifiedOnly) capcoVisibilityString = "[ { c:\"U\" } ]";
+    }
+
     /**
      * @return  CAPCO visibility       string, e.g.
      *
      * <tt>"[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]"</tt>
      *
      */
-    public String getVisibility() {
-        return visibility;
+    public String getCapcoVisibilityString() {
+
+        return capcoVisibilityString;
     }
 
     /** set the CAPCO visibility string, e.g.
      *
      * <tt>"[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]"</tt>
      *
-     * @param visibility
+     * @param capcoVisibilityString
      */
-    public void setVisibility(String visibility) {
-        this.visibility = visibility;
+    public void setCapcoVisibilityString(String capcoVisibilityString) {
+        this.capcoVisibilityString = capcoVisibilityString;
+        maybeOverrideCAPCOToUnclassOnly();
     }
+
+
 
     /** sets the SecurityExpression string that is specific to the $redact operator */
     public void setSecurityExpression(String securityExpression) {
