@@ -27,7 +27,9 @@ public class BrowseController {
     @RequestMapping(value="/browse", method = RequestMethod.GET)
     public ModelAndView browse(Map<String, Object> model) {
 
-
+        // new security repo in mongo will feed the user perhaps in a Spring User object,
+        // this flipFlop is here to show a demo of 2 different CAPCO security settings in an
+        // easy manner... just refresh the browser and we toggle the security setting
         flipFlop = !flipFlop;
 
         if (flipFlop) {

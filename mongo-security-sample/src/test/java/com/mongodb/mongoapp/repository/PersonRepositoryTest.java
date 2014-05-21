@@ -1,8 +1,12 @@
 package com.mongodb.mongoapp.repository;
 
+import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mongodb.*;
+import junit.framework.Assert;
+import org.bson.types.BasicBSONList;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +45,37 @@ public class PersonRepositoryTest {
         
         Person p2 = personRepository.findAll().iterator().next();
         //System.out.println(p2.getFavorites().getSecurityLabel().get(0));
+    }
+
+    @Test
+    public void testStdJavaDriverFind() throws UnknownHostException {
+
+        Mongo mongo = new Mongo();
+
+        DB db = mongo.getDB("test");
+        DBCollection customersCollection = db.getCollection("ttt$customers");
+        customersCollection.drop();
+
+        DBObject address = new BasicDBObject("city", "NYC");
+        address.put("street", "Broadway");
+
+        DBObject addresses = new BasicDBObject();
+
+        if (false) {
+            BasicBSONList bsonList = new BasicBSONList();
+            bsonList.putAll(addresses);
+            addresses.putAll(bsonList);
+        } else {
+            addresses.putAll(address);
+        }
+
+        DBObject customer = new BasicDBObject("firstname", "Tom");
+        customer.put("lastname", "Smith");
+        customer.put("addresses", addresses);
+
+        customersCollection.insert(customer);
+        //        customersCollection.find(null, null);
+        Assert.assertEquals(1, customersCollection.count());
     }
 
 }

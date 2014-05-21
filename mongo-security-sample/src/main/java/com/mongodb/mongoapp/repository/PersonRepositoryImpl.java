@@ -3,6 +3,7 @@ package com.mongodb.mongoapp.repository;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.mongodb.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,16 +11,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
-import com.mongodb.AggregationOptions;
-import com.mongodb.BasicDBObject;
-import com.mongodb.Cursor;
-import com.mongodb.DBCollection;
-import com.mongodb.DBObject;
 import com.mongodb.mongoapp.domain.Person;
 import com.mongodb.util.JSON;
 
 @Component
-public class PersonRepositoryImpl implements PersonRepositoryCustom {
+public class PersonRepositoryImpl<Clz> implements PersonRepositoryCustom {
     
     protected static final Logger logger = LoggerFactory.getLogger(PersonRepositoryImpl.class);
 
@@ -52,9 +48,37 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         return p;
     }
 
-    public Iterable<Person> findPersons(final Pageable pageable) {
+    /**
+     * Queries for an object in this collection.
+     * <p>
+     * An empty DBObject will match every document in the collection.
+     * Regardless of fields specified, the _id fields are always returned.
+     * </p>
+     * <p>
+     * An example that returns the "x" and "_id" fields for every document
+     * in the collection that has an "x" field:
+     * </p>
+     * <pre>
+     * {@code
+     * BasicDBObject keys = new BasicDBObject();
+     * keys.put("x", 1);
+     *
+     * DBCursor cursor = collection.find(new BasicDBObject(), keys);}
+     * </pre>
+     *
+     * @param ref object for which to search
+     * @param keys fields to return
+     * @return a cursor to iterate over results
+     * @mongodb.driver.manual tutorial/query-documents/ Query
+     */
+    //public DBCursor find( DBObject ref , DBObject keys ){
+    //    return new DBCursor( this, ref, keys, getReadPreference());
+    //}
+
+    // interface is DBObject ref , DBObject keys
+    public Iterable<Person> findPersons(final Pageable pageable/*, match , projection, .... */) {
         DBCollection person = mongoTemplate.getCollection("person");
-        
+
         AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
         List<DBObject> pipeline = new ArrayList<DBObject>();
 
@@ -70,13 +94,13 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         List<Person> persons = new ArrayList<Person>();
         while (cursor.hasNext()) {
             DBObject personDbo = cursor.next();
-            
+
             Person p = mongoTemplate.getConverter().read(Person.class, personDbo);
             persons.add(p);
-            
+
         }
-        
-        
+
+
         return persons;
     }
 
