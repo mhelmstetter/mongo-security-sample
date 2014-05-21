@@ -1,20 +1,29 @@
 {
-	$cond : [
-		{
-			$allElementsTrue : {
-				$map : {
-					input: {$ifNull:["$sl",[[]]]},
-					"as" : "setNeeded",
-					"in" : {
-						$setIsSubset : [
-							"$$setNeeded",
-							%s
-						]
-					}
-				}
-			}
-		},
-		"$$DESCEND",
-		"$$PRUNE"
-	]
+    $redact: {
+        $cond: {
+            if: {
+                $allElementsTrue : {
+                    $map : {
+                        input: {$ifNull:["$sl",[[]]]},
+                        "as" : "setNeeded",
+                            "in" : {
+                            $cond: {
+                                if: {
+                                    $or: [
+                                        { $eq: [ { $size: "$$setNeeded" }, 0 ] },
+                                        { $gt: [ { $size: { $setIntersection: [ "$$setNeeded", %s ] } }, 0 ] }
+                                    ]
+                                },
+                                then: true,
+                            else: false
+                            }
+                        }
+                    }
+                }
+            },
+            then: "$$DESCEND",
+        else: "$$PRUNE"
+        }
+    }
 }
+
