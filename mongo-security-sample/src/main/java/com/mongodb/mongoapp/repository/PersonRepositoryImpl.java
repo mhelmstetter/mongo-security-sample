@@ -11,11 +11,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.stereotype.Component;
 
+import com.mongodb.AggregationOptions;
+import com.mongodb.BasicDBObject;
+import com.mongodb.Cursor;
+import com.mongodb.DBCollection;
+import com.mongodb.DBObject;
 import com.mongodb.mongoapp.domain.Person;
 import com.mongodb.util.JSON;
 
 @Component
-public class PersonRepositoryImpl<Clz> implements PersonRepositoryCustom {
+public class PersonRepositoryImpl implements PersonRepositoryCustom {
     
     protected static final Logger logger = LoggerFactory.getLogger(PersonRepositoryImpl.class);
 
