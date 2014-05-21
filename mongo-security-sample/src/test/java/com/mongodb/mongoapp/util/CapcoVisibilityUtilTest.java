@@ -1,7 +1,6 @@
 package com.mongodb.mongoapp.util;
 
 import org.junit.Test;
-import sun.jvm.hotspot.utilities.Assert;
 
 import java.util.List;
 
