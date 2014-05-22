@@ -20,13 +20,42 @@ import java.util.*;
  * </p>
  *
  * <p>
- *    Consider having to encode a Top Secret CAPCO setting, you can call:
+ *    Overview:
+ *    <br/> this makes it easy to encode security settings that you have in systems.
+ *    Consider having to encode a Top Secret CAPCO setting, you can call this one call that will expand to
+ *    lower levels as necessary:
  *    <tt>
  *        CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS"}) =>
- *         generates
+ *           That call in fact under the covers expands to or generates:
+ *
  *        [ { c:"TS" }, { c:"S" }, { c:"U" }, { c:"C" } ]   (( in javascript notation which is needed by the
  *                                                             reference FLAC implementation))
  *    </tt>
+ *
+ *
+ * </p>
+ *
+ * <p> <b>See Examples below for more details:</b>
+ * </p>
+ * <p>
+ *     <tt>
+ *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", , "c:S"})
+ *     </tt>
+ *     generates:
+ *     <br/>
+ *     <tt>
+ *     "[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]"
+ *     </tt>
+ * </p>
+ * <p>
+ *     <tt>
+ *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
+ *     </tt>
+ *     generates:
+ *     <br/>
+ *     <tt>
+ *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+ *     </tt>
  * </p>
  */
 public class CapcoVisibilityUtil {
@@ -34,10 +63,33 @@ public class CapcoVisibilityUtil {
     protected static final boolean EXPAND_CAPCO_AS_TREE_OF_VISIBILITY = true;
 
     /**
-     * Convert java array of simple strings like: "c:TS" , "c:S"  into an appropriate CapcoVisibilityString like:
-     * <tt>
-     * [ { c:"TS" }, { c:"S" }, { c:"U" }, { c:"C" }, { sci:"TK" }, { sci:"SI" }, { sci:"G" }, { sci:"HCS" } ]
+     * Convert java array of simple strings like: "c:TS"  into an appropriate CapcoVisibilityString.
      </tt>
+     * <p> <b>See Examples below for more details:</b>
+     * </p>
+     * <p>
+     *     <tt>
+     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})  // note here we deal with S being contained in TS
+     *     </tt>
+     *     generates:
+     *     <br/>
+     *     <tt>
+     *     "[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]"
+     *     </tt>
+     * </p>
+     * <p>
+     *     <tt>
+     *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
+     *     </tt>
+     *     generates:
+     *     <br/>
+     *     <tt>
+     *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+     *     </tt>
+     * </p>
+     *
+     * <p> NOTES: we fully support generating lower level of TS S C and U  , for all others you need to expand yourself.</p>
+     *
      * @param userCapcoVisibilityStrings
      * @return
      */
@@ -50,10 +102,33 @@ public class CapcoVisibilityUtil {
     }
 
     /**
-     * Convert java array of simple strings like: "c:TS" , "c:S"  into an appropriate CapcoVisibilityString like:
-     * <tt>
-     * [ { c:"TS" }, { c:"S" }, { c:"U" }, { c:"C" }, { sci:"TK" }, { sci:"SI" }, { sci:"G" }, { sci:"HCS" } ]
+     * Convert java List of simple strings like: "c:TS"  into an appropriate CapcoVisibilityString.
      </tt>
+     * <p> <b>See Examples below for more details:</b>
+     * </p>
+     * <p>
+     *     <tt>
+     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})  // note here we deal with S being contained in TS
+     *     </tt>
+     *     generates:
+     *     <br/>
+     *     <tt>
+     *     "[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]"
+     *     </tt>
+     * </p>
+     * <p>
+     *     <tt>
+     *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
+     *     </tt>
+     *     generates:
+     *     <br/>
+     *     <tt>
+     *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+     *     </tt>
+     * </p>
+     *
+     * <p> NOTES: we fully support generating lower level of TS S C and U  , for all others you need to expand yourself.</p>
+     *
      * @param userCapcoVisibilityStrings
      * @return
      */
