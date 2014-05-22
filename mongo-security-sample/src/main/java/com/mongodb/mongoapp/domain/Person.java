@@ -1,15 +1,10 @@
 package com.mongodb.mongoapp.domain;
 
 import org.bson.types.ObjectId;
-import org.springframework.data.annotation.Id;
-import org.springframework.data.annotation.Reference;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document
-public class Person {
-
-    @Id
-    private ObjectId id;
+public class Person extends PersistedDomainObject {
 
     private String firstName;
     private String lastName;
@@ -21,13 +16,6 @@ public class Person {
     
     private Favorites favorites;
 
-    public ObjectId getId() {
-        return id;
-    }
-
-    public void setId(ObjectId id) {
-        this.id = id;
-    }
 
     public String getFirstName() {
         return firstName;

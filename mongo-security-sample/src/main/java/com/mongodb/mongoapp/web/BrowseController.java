@@ -2,6 +2,9 @@ package com.mongodb.mongoapp.web;
 
 import java.util.Map;
 
+import com.mongodb.mongoapp.domain.CapcoUser;
+import com.mongodb.mongoapp.service.CapcoSecurityService;
+import com.mongodb.mongoapp.service.UserContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Controller;
@@ -15,17 +18,27 @@ import com.mongodb.mongoapp.service.BrowseService;
 
 @Controller
 public class BrowseController {
-    
+
     @Autowired
     private BrowseService browseService;
+
+    private final CapcoSecurityService capcoSecurityService;
+    private final UserContext userContext;
     
     @Autowired
     PersonRepository personRepository;
 
-    private static boolean flipFlop = false;       // to flipFlop thru 2 different CAPCO levels
 
-    @RequestMapping(value="/browse", method = RequestMethod.GET)
-    public ModelAndView browse(Map<String, Object> model) {
+    @Autowired
+    public BrowseController(CapcoSecurityService calendarService, UserContext userContext) {
+        this.capcoSecurityService = calendarService;
+        this.userContext = userContext;
+    }
+
+    private static boolean flipFlop = false;       // to flipFlop thru 2 different CAPCO levels in method flipFlop()
+
+    @RequestMapping(value="/flipFlop", method = RequestMethod.GET)
+    public ModelAndView flipFlop(Map<String, Object> model) {
 
         // new security repo in mongo will feed the user perhaps in a Spring User object,
         // this flipFlop is here to show a demo of 2 different CAPCO security settings in an
@@ -33,12 +46,33 @@ public class BrowseController {
         flipFlop = !flipFlop;
 
         if (flipFlop) {
-            String capcoVisibilityString = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+            String capcoVisibilityString = CapcoUser.TestCapcoUsers.TS_USER.getCapcoUserString();
             personRepository.setCapcoVisibilityString(capcoVisibilityString);
         } else {
             // just for testing now use U
-            personRepository.setCapcoVisibilityString("[ { c:\"U\" } ]");
+            String capcoVisibilityString = CapcoUser.TestCapcoUsers.UNCLASS_USER.getCapcoUserString();
+            personRepository.setCapcoVisibilityString(capcoVisibilityString);
         }
+
+        Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
+
+        //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));
+
+        //Iterable<Person> persons = personRepository.findAll();
+
+        ModelAndView mav = new ModelAndView();
+        mav.setViewName("browse");
+        mav.addObject("persons", persons);
+        return mav;
+    }
+
+
+    @RequestMapping(value="/browse", method = RequestMethod.GET)
+    public ModelAndView browse(Map<String, Object> model) {
+
+        CapcoUser currentUser = userContext.getCurrentUser();
+        String capcoVisibilityString = currentUser.getCapcoUserString();
+        personRepository.setCapcoVisibilityString(capcoVisibilityString); // TODO: later on the findPersons will fetch
 
         Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
         
@@ -49,6 +83,7 @@ public class BrowseController {
         ModelAndView mav = new ModelAndView();
         mav.setViewName("browse");
         mav.addObject("persons", persons);
+        mav.addObject("currentUser", currentUser);
         return mav;
     }
 }

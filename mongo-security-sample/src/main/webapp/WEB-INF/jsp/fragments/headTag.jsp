@@ -3,7 +3,7 @@
 <%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
-    <title>PetClinic :: a Spring Framework demonstration</title>
+    <title>Mongo FLAC reference implementation :: a Spring Framework demonstration</title>
 
 
     <spring:url value="/webjars/bootstrap/2.3.0/css/bootstrap.min.css" var="bootstrapCss"/>
@@ -22,15 +22,29 @@
     <link href="${jQueryUiCss}" rel="stylesheet"></link>
 </head>
 
+currentUser:
+  ${currentUser}
 
-<security:authorize access="isAuthenticated()">
-    logged in as <security:authentication property="principal.username" /> 
-    <c:url value="/j_spring_security_logout" var="logoutUrl" />
-<a href="${logoutUrl}">Logout</a>
-</security:authorize>
+<table style="width:300px">
+    <tr>
+        <td>Spring User Management considers them:
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <security:authorize access="isAuthenticated()">
+            logged in as <security:authentication property="principal.username" />
+                <c:url value="/j_spring_security_logout" var="logoutUrl" />
+            <a href="${logoutUrl}">Logout</a>
+            </security:authorize>
 
-<security:authorize access="! isAuthenticated()">
-    not logged in
-</security:authorize>
+            <security:authorize access="! isAuthenticated()">
+            not logged in
+            </security:authorize>
+
+        </td>
+    </tr>
+</table>
+<table></table>
 
 

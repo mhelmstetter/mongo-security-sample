@@ -118,4 +118,27 @@ public class CapcoVisibilityUtil {
         return new ArrayList<String>( capco );
     }
 
+    ////
+    // In place of spring, we can role our own ThreadLocal CAPCO Credentials management, if you
+    // were not using SPRING security.
+    ////
+    /*    private static ThreadLocal<String> userCapcoCredentials = new ThreadLocal<String>() {
+        @Override
+        protected String initialValue() {
+            // lookup user CAPCO level
+            String userCAPCO1 = "";
+            String userCAPCO2 = "";
+
+            return new String();
+        }
+    };
+
+
+
+    public static String getCurrentUserCapcoCredentials() {
+        // this may fetch from SPRING the user credentials or from your DB
+
+        return null;
+
+    } */
 }

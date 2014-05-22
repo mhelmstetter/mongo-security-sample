@@ -14,8 +14,12 @@ Key concepts:
         generates what we call a CapcoVisibility string.  That string is passed into a system
         capability.
 
-      Currenlty in detail that string will expand into this format (if viewed in javascript):
+      Currently in detail that string will expand into this format (if viewed in javascript):
       	[ { c:"TS" }, { c:"S" }, { c:"U" }, { c:"C" } ]   (( which is needed by the
                                                              reference FLAC implementation))
 
  
+   See file src/main/java/com/mongodb/mongoapp/domain/CapcoUser.java
+   for some sample calls to convertJavaToEncodeCapcoVisibility  for a few sample Demo CapcoUsers being setup with
+   CAPCO visibility settings.
+   
