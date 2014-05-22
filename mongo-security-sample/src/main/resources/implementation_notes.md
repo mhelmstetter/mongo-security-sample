@@ -23,3 +23,8 @@ Key concepts:
    for some sample calls to convertJavaToEncodeCapcoVisibility  for a few sample Demo CapcoUsers being setup with
    CAPCO visibility settings.
    
+
+   The subsystem used ObjectID as the type of the primary keys.  MongoDB java driver is smart and can handle a conversion of
+   BigInteger to ObjectID and visa versa.  However to keep it simple we will use ObjectID.  The downside of this is that our
+   domain layer now depends on the mongo java as a componenent. 
+   

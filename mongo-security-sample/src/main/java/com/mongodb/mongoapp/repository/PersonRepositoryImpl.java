@@ -194,9 +194,9 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
      * @param redact     the redact clause
      */
     private void addRedactionMatchToPipeline(List<DBObject> pipeline, DBObject criteria, DBObject redact) {
+        pipeline.add(redact);
         DBObject match = new BasicDBObject("$match", ( (criteria == null) ? new BasicDBObject() : criteria ) );
         pipeline.add(match);
-        pipeline.add(redact);
     }
 
     /** Add "limit" for multi-object results to mongodb command incantation to pipeline */

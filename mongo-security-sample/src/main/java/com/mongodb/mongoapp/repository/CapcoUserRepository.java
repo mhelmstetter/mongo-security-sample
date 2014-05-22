@@ -2,6 +2,9 @@ package com.mongodb.mongoapp.repository;
 
 import com.mongodb.mongoapp.domain.CapcoUser;
 import org.bson.types.ObjectId;
+import org.bson.types.ObjectId;
+import org.springframework.data.repository.PagingAndSortingRepository;
+import org.springframework.data.repository.Repository;
 
 import java.util.List;
 
@@ -12,7 +15,7 @@ import java.util.List;
  *           The interface is designed to work with mongodb and the primary key type is ObjectId.
  * </p>
  */
-public interface CapcoUserRepository {
+public interface CapcoUserRepository /*extends Repository<CapcoUser, ObjectId>*/ {
 
     /**
      * Gets a {@link com.mongodb.mongoapp.domain.CapcoUser} for a specific {@link com.mongodb.mongoapp.domain.CapcoUser#getId()}.
