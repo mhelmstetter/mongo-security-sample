@@ -2,6 +2,7 @@ package com.mongodb.mongoapp.repository;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.mongodb.*;
 import org.slf4j.Logger;
@@ -41,7 +42,9 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         //String visibility = "[\"S\"]";
         DBObject redact = getRedactCommand(visibility);
 
-        addRedactionMatchToPipeline(pipeline, redact);
+        DBObject criteria = null;  // null means find all documents ( criteria of {} )
+
+        addRedactionMatchToPipeline(pipeline, criteria, redact);
         
         logger.debug("findPerson() " + pipeline.toString());
         
@@ -80,8 +83,25 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
     //    return new DBCursor( this, ref, keys, getReadPreference());
     //}
 
+
     // interface is DBObject ref , DBObject keys
     public Iterable<Person> findPersons(final Pageable pageable/*, match , projection, .... */) {
+        BasicDBObject criteria = null;  // null means find all documents ( criteria of {} )
+        return findPersons(criteria,   pageable);
+    }
+
+    /**
+     * For instance:
+     *
+     * <tt><pre>
+     *                  BasicDBObject criteria = new BasicDBObject("lastName", "Best");
+     *                  Iterable<Person>  it = findPersons( criteria, pageable)
+     * </pre></tt>
+     * @param criteria  the selection criteria
+     * @param pageable
+     * @return
+     */
+    public Iterable<Person> findPersons(BasicDBObject criteria, final Pageable pageable) {
         DBCollection person = mongoTemplate.getCollection("person");
 
         AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
@@ -90,7 +110,7 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         String visibility = getCapcoVisibilityString();
         DBObject redact = getRedactCommand(visibility);
 
-        addRedactionMatchToPipeline(pipeline, redact);
+        addRedactionMatchToPipeline(pipeline, criteria, redact);
         addLimitToPipeline(pageable, pipeline);
 
         logger.debug("findPersons() " + pipeline.toString());
@@ -107,13 +127,74 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
 
 
         return persons;
+
+    }
+
+    // FUTURE : this is for future use, we pass in a DBCollection and the criteria, etc ...
+
+    public Iterable<Person> findBasedOnRedactedQuery(DBCollection collection, DBObject criteria, DBObject fields, final Pageable pageable/*, match , projection, .... */) {
+
+        AggregationOptions options = AggregationOptions.builder().outputMode(AggregationOptions.OutputMode.CURSOR).build();
+        List<DBObject> pipeline = new ArrayList<DBObject>();
+
+        String visibility = getCapcoVisibilityString();
+        DBObject redact = getRedactCommand(visibility);
+
+        addRedactionMatchToPipeline(pipeline, criteria, redact);
+        addLimitToPipeline(pageable, pipeline);
+
+        logger.debug("findBasedOnRedactedQuery on collection: " + collection.getFullName() +  " " + pipeline.toString());
+
+        //////////////
+        // BUGBUG : for now we need to use a Collection of Person !
+        //////////////
+        Cursor cursor = collection.aggregate(pipeline, options);
+        List<Person> persons = new ArrayList<Person>();
+        while (cursor.hasNext()) {
+            DBObject personDbo = cursor.next();
+
+            Person p = mongoTemplate.getConverter().read(Person.class, personDbo);
+            persons.add(p);
+
+        }
+
+
+        return persons;
+    }
+
+    /**
+     * Get a single document from collection.
+     *
+     * @param criteria    the selection criteria using query operators.
+     * @param fields      specifies which projection MongoDB will return from the documents in the result set.
+     * @return A document that satisfies the query specified as the argument to this method.
+     * @mongodb.driver.manual tutorial/query-documents/ Query
+     * @since 2.12.0
+     */
+    DBObject findOne(DBCollection collection, DBObject criteria, DBObject fields, DBObject orderBy, ReadPreference readPref,
+                     long maxTime, TimeUnit maxTimeUnit) {
+
+       /*       * @param orderBy     A document whose fields specify the attributes on which to sort the result set.
+                * @param readPref    {@code ReadPreference} to be used for this operation
+                * @param maxTime     the maximum time that the server will allow this operation to execute before killing it
+                * @param maxTimeUnit the unit that maxTime is specified in
+        *
+        * Are additional flags that can be specified by the findOne() method.
+        */
+
+        return null;
     }
 
 
-
-    /** Add "$redact" mongodb command incantation to pipeline */
-    private void addRedactionMatchToPipeline(List<DBObject> pipeline, DBObject redact) {
-        DBObject match = new BasicDBObject("$match", new BasicDBObject() );
+    /**
+     * Add "$redact" mongodb command incantation to pipeline , after inserting the MATCH element.
+     *
+     * @param pipeline   the pipeline that will form the basis of the aggregate operation
+     * @param criteria   the match criteria desired by user, if none pass in NULL
+     * @param redact     the redact clause
+     */
+    private void addRedactionMatchToPipeline(List<DBObject> pipeline, DBObject criteria, DBObject redact) {
+        DBObject match = new BasicDBObject("$match", ( (criteria == null) ? new BasicDBObject() : criteria ) );
         pipeline.add(match);
         pipeline.add(redact);
     }
