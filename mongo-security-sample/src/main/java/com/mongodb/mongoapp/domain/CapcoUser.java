@@ -26,21 +26,31 @@ public class CapcoUser  extends PersistedDomainObject implements Serializable {
 
     }
 
-    public CapcoUser(ObjectId id, String firstName, String lastName, String email, String capcoUserString) {
+    public CapcoUser(ObjectId id, String firstName, String lastName, String email, String password, String capcoUserString) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
+        this.password = password;
         this.capcoUserString = capcoUserString;
     }
 
+
+    public CapcoUser(String firstName, String lastName, String email, String password, String capcoUserString) {
+        this.firstName = firstName;
+        this.lastName = lastName;
+        this.email = email;
+        this.password = password;
+        this.capcoUserString = capcoUserString;
+    }
+
+    /** no password set version */
     public CapcoUser(String firstName, String lastName, String email, String capcoUserString) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.capcoUserString = capcoUserString;
     }
-
 
     public String getFirstName() {
         return firstName;
