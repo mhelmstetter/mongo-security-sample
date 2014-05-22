@@ -44,15 +44,17 @@ public class BrowseController {
         // this flipFlop is here to show a demo of 2 different CAPCO security settings in an
         // easy manner... just refresh the browser and we toggle the security setting
         flipFlop = !flipFlop;
+        CapcoUser capcoUser = null;
 
         if (flipFlop) {
-            String capcoVisibilityString = CapcoUser.TestCapcoUsers.TS_USER.getCapcoUserString();
-            personRepository.setCapcoVisibilityString(capcoVisibilityString);
+            capcoUser = CapcoUser.TestCapcoUsers.TS_USER;
         } else {
             // just for testing now use U
-            String capcoVisibilityString = CapcoUser.TestCapcoUsers.UNCLASS_USER.getCapcoUserString();
-            personRepository.setCapcoVisibilityString(capcoVisibilityString);
+            capcoUser = CapcoUser.TestCapcoUsers.UNCLASS_USER;
         }
+
+        String capcoVisibilityString = capcoUser.getCapcoUserString();
+        personRepository.setCapcoVisibilityString(capcoVisibilityString);
 
         Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
 
@@ -63,6 +65,7 @@ public class BrowseController {
         ModelAndView mav = new ModelAndView();
         mav.setViewName("browse");
         mav.addObject("persons", persons);
+        mav.addObject("currentUser", capcoUser);
         return mav;
     }
 
