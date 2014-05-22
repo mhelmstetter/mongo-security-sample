@@ -39,7 +39,8 @@ import java.util.*;
  * </p>
  * <p>
  *     <tt>
- *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", , "c:S"})
+ *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
+ *          note here we deal with S being contained in TS
  *     </tt>
  *     generates:
  *     <br/>
@@ -69,7 +70,8 @@ public class CapcoVisibilityUtil {
      * </p>
      * <p>
      *     <tt>
-     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})  // note here we deal with S being contained in TS
+     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
+     *         note here we deal with S being contained in TS
      *     </tt>
      *     generates:
      *     <br/>
@@ -108,7 +110,8 @@ public class CapcoVisibilityUtil {
      * </p>
      * <p>
      *     <tt>
-     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})  // note here we deal with S being contained in TS
+     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
+     *         note here we deal with S being contained in TS
      *     </tt>
      *     generates:
      *     <br/>
