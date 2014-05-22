@@ -25,7 +25,9 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
     
     protected static final Logger logger = LoggerFactory.getLogger(PersonRepositoryImpl.class);
 
-    private String capcoVisibilityString = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+    // Here is a illustration of what a long CAPCO securityExpression looks like:
+    //private String capcoVisibilityString = "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
+    private String capcoVisibilityString = "[ { c:\"U\" } ]";  // by default make it unclassified.
 
     @Autowired
     MongoTemplate mongoTemplate;
@@ -39,7 +41,6 @@ public class PersonRepositoryImpl implements PersonRepositoryCustom {
         List<DBObject> pipeline = new ArrayList<DBObject>();
 
         String visibility = getCapcoVisibilityString();
-        //String visibility = "[\"S\"]";
         DBObject redact = getRedactCommand(visibility);
 
         DBObject criteria = null;  // null means find all documents ( criteria of {} )
