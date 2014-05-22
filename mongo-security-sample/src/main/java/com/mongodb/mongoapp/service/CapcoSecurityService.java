@@ -49,8 +49,13 @@ public interface CapcoSecurityService {
      * @param user
      *            a {@link CapcoUser}. Cannot be null.
      * @return a the {@link CapcoUser#getId()} of the {@link CapcoUser} for the user or null if one could not be found.
+     *
      * @throws IllegalArgumentException
      *             if user is null.
+     * @throws UnsupportedOperationException
+     *             if you can not create users dynamically.
+     * @return a the {@link CapcoUser#getId()} of the {@link CapcoUser} for the user or null if one could not be found.
+     *
      */
     ObjectId createUser(CapcoUser user) throws UnsupportedOperationException;
 
