@@ -58,6 +58,9 @@ import java.util.*;
  *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
  *     </tt>
  * </p>
+ *
+ * <p> The above long strings are an encoded javascript like format that is used by our REDAC engine to efficiently support FLAC.</p>
+ *
  */
 public class CapcoVisibilityUtil {
 
