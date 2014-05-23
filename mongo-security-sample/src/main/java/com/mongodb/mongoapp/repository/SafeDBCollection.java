@@ -1,2094 +1,938 @@
 package com.mongodb.mongoapp.repository;
 
 import com.mongodb.*;
+import com.mongodb.mongoapp.domain.UserSecurityAttributes;
+import com.mongodb.util.JSON;
+import org.bson.io.PoolOutputBuffer;
 import org.bson.types.ObjectId;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
+/*
+import static com.mongodb.QueryResultIterator.chooseBatchSize;
+import static com.mongodb.WriteCommandResultHelper.getBulkWriteException;
+import static com.mongodb.WriteCommandResultHelper.getBulkWriteResult;
+import static com.mongodb.WriteCommandResultHelper.hasError;
+import static com.mongodb.WriteRequest.Type.*;
+import static com.mongodb.WriteRequest.Type.INSERT;
+import static com.mongodb.WriteRequest.Type.REPLACE;
+*/
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.bson.util.Assertions.isTrue;
 
 /**
  * SafeDBCollection is a Safe DBCollection that honors CAPCO controls.
  */
-public class SafeDBCollection /*extends DBCollection*/ {
-/*
-//    @Override
-//    public WriteResult insert(List<DBObject> list, WriteConcern concern, DBEncoder encoder) {
-//        return null;
-//    }
-//
-//    @Override
-//    public WriteResult update(DBObject q, DBObject o, boolean upsert, boolean multi, WriteConcern concern, DBEncoder encoder) {
-//        return null;
-//    }
-//
-//    @Override
-//    protected void doapply(DBObject o) {
-//
-//    }
-//
-//    @Override
-//    public WriteResult remove(DBObject o, WriteConcern concern, DBEncoder encoder) {
-//        return null;
-//    }
-//
-//    @Override
-//    public void createIndex(DBObject keys, DBObject options, DBEncoder encoder) {
-//
-//    }
-//
-//    @Override
-//    public Cursor aggregate(List<DBObject> pipeline, AggregationOptions options, ReadPreference readPreference) {
-//        return null;
-//    }
-//
-//    @Override
-//    public List<Cursor> parallelScan(ParallelScanOptions options) {
-//        return null;
-//    }
-//*/
-//
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param arr     {@code DBObject}'s to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @dochub insert Insert
-//     */
-//    public WriteResult insert(DBObject[] arr , WriteConcern concern ){
-//        return insert( arr, concern, getDBEncoder());
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param arr     {@code DBObject}'s to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @param encoder {@code DBEncoder} to be used
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @dochub insert Insert
-//     */
-//    public WriteResult insert(DBObject[] arr , WriteConcern concern, DBEncoder encoder) {
-//        return insert(Arrays.asList(arr), concern, encoder);
-//    }
-//
-//    /**
-//     * Insert a document into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param o       {@code DBObject} to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @dochub insert Insert
-//     */
-//    public WriteResult insert(DBObject o , WriteConcern concern ){
-//        return insert( Arrays.asList(o) , concern );
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added. Collection wide {@code WriteConcern} will be used.
-//     *
-//     * @param arr {@code DBObject}'s to be inserted
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/insert-documents/ Insert
-//     */
-//    public WriteResult insert(DBObject ... arr){
-//        return insert( arr , getWriteConcern() );
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param arr     {@code DBObject}'s to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/insert-documents/ Insert
-//     */
-//    public WriteResult insert(WriteConcern concern, DBObject ... arr){
-//        return insert( arr, concern );
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param list list of {@code DBObject} to be inserted
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/insert-documents/ Insert
-//     */
-//    public WriteResult insert(List<DBObject> list ){
-//        return insert( list, getWriteConcern() );
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param list    list of {@code DBObject}'s to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/insert-documents/ Insert
-//     */
-//    public WriteResult insert(List<DBObject> list, WriteConcern concern ){
-//        return insert(list, concern, getDBEncoder() );
-//    }
-//
-//    /**
-//     * Insert documents into a collection. If the collection does not exists on the server, then it will be created. If the new document
-//     * does not contain an '_id' field, it will be added.
-//     *
-//     * @param list    a list of {@code DBObject}'s to be inserted
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @param encoder {@code DBEncoder} to use to serialise the documents
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/insert-documents/ Insert
-//     */
-//    public abstract WriteResult insert(List<DBObject> list, WriteConcern concern, DBEncoder encoder);
-//
-//    /**
-//     * Modify an existing document or documents in collection. By default the method updates a single document. The query parameter employs
-//     * the same query selectors, as used in {@link DBCollection#find(DBObject)}.
-//     *
-//     * @param q       the selection criteria for the update
-//     * @param o       the modifications to apply
-//     * @param upsert  when true, inserts a document if no document matches the update query criteria
-//     * @param multi   when true, updates all documents in the collection that match the update query criteria, otherwise only updates one
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/modify-documents/ Modify
-//     */
-//    public WriteResult update( DBObject q , DBObject o , boolean upsert , boolean multi , WriteConcern concern ){
-//        return update( q, o, upsert, multi, concern, getDBEncoder());
-//    }
-//
-//    /**
-//     * Modify an existing document or documents in collection. By default the method updates a single document. The query parameter employs
-//     * the same query selectors, as used in {@link DBCollection#find(DBObject)}.
-//     *
-//     * @param q       the selection criteria for the update
-//     * @param o       the modifications to apply
-//     * @param upsert  when true, inserts a document if no document matches the update query criteria
-//     * @param multi   when true, updates all documents in the collection that match the update query criteria, otherwise only updates one
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @param encoder the DBEncoder to use
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/modify-documents/ Modify
-//     */
-//    public abstract WriteResult update( DBObject q , DBObject o , boolean upsert , boolean multi , WriteConcern concern, DBEncoder encoder );
-//
-//    /**
-//     * Modify an existing document or documents in collection. By default the method updates a single document. The query parameter employs
-//     * the same query selectors, as used in {@link DBCollection#find(DBObject)}.  Calls {@link DBCollection#update(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, boolean, boolean, com.mongodb.WriteConcern)} with default WriteConcern.
-//     *
-//     * @param q      the selection criteria for the update
-//     * @param o      the modifications to apply
-//     * @param upsert when true, inserts a document if no document matches the update query criteria
-//     * @param multi  when true, updates all documents in the collection that match the update query criteria, otherwise only updates one
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/modify-documents/ Modify
-//     */
-//    public WriteResult update( DBObject q , DBObject o , boolean upsert , boolean multi ){
-//        return update( q , o , upsert , multi , getWriteConcern() );
-//    }
-//
-//    /**
-//     * Modify an existing document or documents in collection. By default the method updates a single document. The query parameter employs
-//     * the same query selectors, as used in {@link DBCollection#find(DBObject)}.  Calls {@link DBCollection#update(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, boolean, boolean)} with upsert=false and multi=false
-//     *
-//     * @param q the selection criteria for the update
-//     * @param o the modifications to apply
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/modify-documents/ Modify
-//     */
-//    public WriteResult update( DBObject q , DBObject o ){
-//        return update( q , o , false , false );
-//    }
-//
-//    /**
-//     * Modify an existing document or documents in collection. By default the method updates a single document. The query parameter employs
-//     * the same query selectors, as used in {@link DBCollection#find()}.  Calls {@link DBCollection#update(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, boolean, boolean)} with upsert=false and multi=true
-//     *
-//     * @param q the selection criteria for the update
-//     * @param o the modifications to apply
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/modify-documents/ Modify
-//     */
-//    public WriteResult updateMulti( DBObject q , DBObject o ){
-//        return update( q , o , false , true );
-//    }
-//
-//    /**
-//     * Adds any necessary fields to a given object before saving it to the collection.
-//     * @param o object to which to add the fields
-//     */
-//    protected abstract void doapply( DBObject o );
-//
-//    /**
-//     * Remove documents from a collection.
-//     *
-//     * @param o       the deletion criteria using query operators. Omit the query parameter or pass an empty document to delete all
-//     *                documents in the collection.
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/remove-documents/ Remove
-//     */
-//    public WriteResult remove( DBObject o , WriteConcern concern ){
-//        return remove(  o, concern, getDBEncoder());
-//    }
-//
-//    /**
-//     * Remove documents from a collection.
-//     *
-//     * @param o       the deletion criteria using query operators. Omit the query parameter or pass an empty document to delete all
-//     *                documents in the collection.
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @param encoder {@code DBEncoder} to be used
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/remove-documents/ Remove
-//     */
-//    public abstract WriteResult remove( DBObject o , WriteConcern concern, DBEncoder encoder );
-//
-//    /**
-//     * Remove documents from a collection. Calls {@link DBCollection#remove(com.mongodb.DBObject, com.mongodb.WriteConcern)} with the
-//     * default WriteConcern
-//     *
-//     * @param o the deletion criteria using query operators. Omit the query parameter or pass an empty document to delete all documents in
-//     *          the collection.
-//     * @return the result of the operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/remove-documents/ Remove
-//     */
-//    public WriteResult remove( DBObject o ){
-//        return remove( o , getWriteConcern() );
-//    }
-//
-//
-//    /**
-//     * Finds objects
-//     */
-//    abstract QueryResultIterator find(DBObject ref, DBObject fields, int numToSkip, int batchSize, int limit, int options,
-//                                      ReadPreference readPref, DBDecoder decoder);
-//
-//    abstract QueryResultIterator find(DBObject ref, DBObject fields, int numToSkip, int batchSize, int limit, int options,
-//                                      ReadPreference readPref, DBDecoder decoder, DBEncoder encoder);
-//
-//
-//    /**
-//     * Calls {@link DBCollection#find(com.mongodb.DBObject, com.mongodb.DBObject, int, int)} and applies the query options
-//     *
-//     * @param query     query used to search
-//     * @param fields    the fields of matching objects to return
-//     * @param numToSkip number of objects to skip
-//     * @param batchSize the batch size. This option has a complex behavior, see {@link DBCursor#batchSize(int) }
-//     * @param options   see {@link com.mongodb.Bytes} QUERYOPTION_*
-//     * @return the cursor
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     * @deprecated use {@link com.mongodb.DBCursor#skip(int)}, {@link com.mongodb.DBCursor#batchSize(int)} and {@link
-//     * com.mongodb.DBCursor#setOptions(int)} on the {@code DBCursor} returned from {@link com.mongodb.DBCollection#find(DBObject,
-//     * DBObject)}
-//     */
-//    @Deprecated
-//    public DBCursor find( DBObject query , DBObject fields , int numToSkip , int batchSize , int options ){
-//        return find(query, fields, numToSkip, batchSize).addOption(options);
-//    }
-//
-//
-//    /**
-//     * Finds objects from the database that match a query. A DBCursor object is returned, that can be iterated to go through the results.
-//     *
-//     * @param query     query used to search
-//     * @param fields    the fields of matching objects to return
-//     * @param numToSkip number of objects to skip
-//     * @param batchSize the batch size. This option has a complex behavior, see {@link DBCursor#batchSize(int) }
-//     * @return the cursor
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     * @deprecated use {@link com.mongodb.DBCursor#skip(int)} and {@link com.mongodb.DBCursor#batchSize(int)} on the {@code DBCursor}
-//     * returned from {@link com.mongodb.DBCollection#find(DBObject, DBObject)}
-//     */
-//    @Deprecated
-//    public DBCursor find( DBObject query , DBObject fields , int numToSkip , int batchSize ) {
-//        DBCursor cursor = find(query, fields).skip(numToSkip).batchSize(batchSize);
-//        return cursor;
-//    }
-//
-//    // ------
-//
-//    /**
-//     * Finds an object by its id.
-//     * This compares the passed in value to the _id field of the document
-//     *
-//     * @param obj any valid object
-//     * @return the object, if found, otherwise null
-//     * @throws MongoException
-//     */
-//    public DBObject findOne( Object obj ){
-//        return findOne(obj, null);
-//    }
-//
-//
-//    /**
-//     * Finds an object by its id.
-//     * This compares the passed in value to the _id field of the document
-//     *
-//     * @param obj any valid object
-//     * @param fields fields to return
-//     * @return the object, if found, otherwise null
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne( Object obj, DBObject fields ){
-//        Iterator<DBObject> iterator = find(new BasicDBObject("_id", obj), fields, 0, -1, 0, getOptions(), getReadPreference(), getDecoder());
-//        return (iterator.hasNext() ? iterator.next() : null);
-//    }
-//
-//    /**
-//     * Atomically modify and return a single document. By default, the returned document does not include the modifications made on the
-//     * update.
-//     *
-//     * @param query     specifies the selection criteria for the modification
-//     * @param fields    a subset of fields to return
-//     * @param sort      determines which document the operation will modify if the query selects multiple documents
-//     * @param remove    when true, removes the selected document
-//     * @param returnNew when true, returns the modified document rather than the original
-//     * @param update    the modifications to apply
-//     * @param upsert    when true, operation creates a new document if the query returns no documents
-//     * @return the document as it was before the modifications, unless {@code returnNew} is true, in which case it returns the document
-//     * after the changes were made
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/findAndModify/ Find and Modify
-//     */
-//    public DBObject findAndModify(DBObject query, DBObject fields, DBObject sort, boolean remove, DBObject update, boolean returnNew, boolean upsert){
-//        return findAndModify(query, fields, sort, remove, update, returnNew, upsert, 0L, MILLISECONDS);
-//    }
-//
-//    /**
-//     * Atomically modify and return a single document. By default, the returned document does not include the modifications made on the
-//     * update.
-//     *
-//     * @param query       specifies the selection criteria for the modification
-//     * @param fields      a subset of fields to return
-//     * @param sort        determines which document the operation will modify if the query selects multiple documents
-//     * @param remove      when {@code true}, removes the selected document
-//     * @param returnNew   when true, returns the modified document rather than the original
-//     * @param update      performs an update of the selected document
-//     * @param upsert      when true, operation creates a new document if the query returns no documents
-//     * @param maxTime     the maximum time that the server will allow this operation to execute before killing it. A non-zero value requires
-//     *                    a server version >= 2.6
-//     * @param maxTimeUnit the unit that maxTime is specified in
-//     * @return the document as it was before the modifications, unless {@code returnNew} is true, in which case it returns the document
-//     * after the changes were made
-//     * @mongodb.driver.manual reference/command/findAndModify/ Find and Modify
-//     * @since 2.12.0
-//     */
-//    public DBObject findAndModify(final DBObject query, final DBObject fields, final DBObject sort,
-//                                  final boolean remove, final DBObject update,
-//                                  final boolean returnNew, final boolean upsert,
-//                                  final long maxTime, final TimeUnit maxTimeUnit) {
-//        BasicDBObject cmd = new BasicDBObject( "findandmodify", _name);
-//        if (query != null && !query.keySet().isEmpty())
-//            cmd.append( "query", query );
-//        if (fields != null && !fields.keySet().isEmpty())
-//            cmd.append( "fields", fields );
-//        if (sort != null && !sort.keySet().isEmpty())
-//            cmd.append( "sort", sort );
-//        if (maxTime > 0) {
-//            cmd.append("maxTimeMS", MILLISECONDS.convert(maxTime, maxTimeUnit));
-//        }
-//
-//        if (remove)
-//            cmd.append( "remove", remove );
-//        else {
-//            if (update != null && !update.keySet().isEmpty()) {
-//                // if 1st key doesn't start with $, then object will be inserted as is, need to check it
-//                String key = update.keySet().iterator().next();
-//                if (key.charAt(0) != '$')
-//                    _checkObject(update, false, false);
-//                cmd.append( "update", update );
-//            }
-//            if (returnNew)
-//                cmd.append( "new", returnNew );
-//            if (upsert)
-//                cmd.append( "upsert", upsert );
-//        }
-//
-//        if (remove && !(update == null || update.keySet().isEmpty() || returnNew))
-//            throw new MongoException("FindAndModify: Remove cannot be mixed with the Update, or returnNew params!");
-//
-//        CommandResult res = this._db.command( cmd );
-//        if (res.ok() || res.getErrorMessage().equals( "No matching object found" )) {
-//            return replaceWithObjectClass((DBObject) res.get( "value" ));
-//        }
-//        res.throwOnError();
-//        return null;
-//    }
-//
-//    /**
-//     * Doesn't yet handle internal classes properly, so this method only does something if object class is set but
-//     * no internal classes are set.
-//     *
-//     * @param oldObj  the original value from the command result
-//     * @return replaced object if necessary, or oldObj
-//     */
-//    private DBObject replaceWithObjectClass(DBObject oldObj) {
-//        if (oldObj == null || getObjectClass() == null &  _internalClass.isEmpty()) {
-//            return oldObj;
-//        }
-//
-//        DBObject newObj = instantiateObjectClassInstance();
-//
-//        for (String key : oldObj.keySet()) {
-//            newObj.put(key, oldObj.get(key));
-//        }
-//        return newObj;
-//    }
-//
-//    private DBObject instantiateObjectClassInstance() {
-//        try {
-//            return (DBObject) getObjectClass().newInstance();
-//        } catch (InstantiationException e) {
-//            throw new MongoInternalException("can't create instance of type " + getObjectClass(), e);
-//        } catch (IllegalAccessException e) {
-//            throw new MongoInternalException("can't create instance of type " + getObjectClass(), e);
-//        }
-//    }
-//
-//
-//    /**
-//     * Atomically modify and return a single document. By default, the returned document does not include the modifications made on the
-//     * update.  Calls {@link DBCollection#findAndModify(com.mongodb.DBObject, com.mongodb.DBObject, com.mongodb.DBObject, boolean,
-//     * com.mongodb.DBObject, boolean, boolean)} with fields=null, remove=false, returnNew=false, upsert=false
-//     *
-//     * @param query  specifies the selection criteria for the modification
-//     * @param sort   determines which document the operation will modify if the query selects multiple documents
-//     * @param update the modifications to apply
-//     * @return the document as it was before the modifications.
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/findAndModify/ Find and Modify
-//     */
-//    public DBObject findAndModify( DBObject query , DBObject sort , DBObject update) {
-//        return findAndModify( query, null, sort, false, update, false, false);
-//    }
-//
-//    /**
-//     * Atomically modify and return a single document. By default, the returned document does not include the modifications made on the
-//     * update.  Calls {@link DBCollection#findAndModify(com.mongodb.DBObject, com.mongodb.DBObject, com.mongodb.DBObject, boolean,
-//     * com.mongodb.DBObject, boolean, boolean)} with fields=null, sort=null, remove=false, returnNew=false, upsert=false
-//     *
-//     * @param query  specifies the selection criteria for the modification
-//     * @param update the modifications to apply
-//     * @return the document as it was before the modifications.
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/findAndModify/ Find and Modify
-//     */
-//    public DBObject findAndModify( DBObject query , DBObject update ){
-//        return findAndModify( query, null, null, false, update, false, false );
-//    }
-//
-//    /**
-//     * Atomically modify and return a single document. By default, the returned document does not include the modifications made on the
-//     * update.  Ccalls {@link DBCollection#findAndModify(com.mongodb.DBObject, com.mongodb.DBObject, com.mongodb.DBObject, boolean,
-//     * com.mongodb.DBObject, boolean, boolean)} with fields=null, sort=null, remove=true, returnNew=false, upsert=false
-//     *
-//     * @param query specifies the selection criteria for the modification
-//     * @return the document as it was before it was removed
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/findAndModify/ Find and Modify
-//     */
-//    public DBObject findAndRemove( DBObject query ) {
-//        return findAndModify( query, null, null, true, null, false, false );
-//    }
-//
-//    // --- START INDEX CODE ---
-//
-//    /**
-//     * Calls {@link DBCollection#createIndex(com.mongodb.DBObject, com.mongodb.DBObject)} with default index options
-//     *
-//     * @param keys a document that contains pairs with the name of the field or fields to index and order of the index
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     */
-//    public void createIndex( final DBObject keys ){
-//        createIndex( keys , defaultOptions( keys ) );
-//    }
-//
-//    /**
-//     * Forces creation of an index on a set of fields, if one does not already exist.
-//     *
-//     * @param keys    a document that contains pairs with the name of the field or fields to index and order of the index
-//     * @param options a document that controls the creation of the index.
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     */
-//    public void createIndex( DBObject keys , DBObject options ){
-//        createIndex( keys, options, getDBEncoder());
-//    }
-//
-//    /**
-//     * Forces creation of an index on a set of fields, if one does not already exist.
-//     *
-//     * @param keys    a document that contains pairs with the name of the field or fields to index and order of the index
-//     * @param options a document that controls the creation of the index.
-//     * @param encoder specifies the encoder that used during operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     * @deprecated use {@link #createIndex(DBObject, com.mongodb.DBObject)} the encoder is not used.
-//     */
-//    @Deprecated
-//    public abstract void createIndex(DBObject keys, DBObject options, DBEncoder encoder);
-//
-//    /**
-//     * Creates an ascending index on a field with default options, if one does not already exist.
-//     *
-//     * @param name name of field to index on
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     * @deprecated use {@link DBCollection#createIndex(DBObject)} instead
-//     */
-//    @Deprecated
-//    public void ensureIndex( final String name ){
-//        ensureIndex( new BasicDBObject( name , 1 ) );
-//    }
-//
-//    /**
-//     * Calls {@link DBCollection#ensureIndex(com.mongodb.DBObject, com.mongodb.DBObject)} with default options
-//     * @param keys an object with a key set of the fields desired for the index
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     *
-//     * @deprecated use {@link DBCollection#createIndex(DBObject)} instead
-//     */
-//    @Deprecated
-//    public void ensureIndex( final DBObject keys ){
-//        ensureIndex( keys , defaultOptions( keys ) );
-//    }
-//
-//    /**
-//     * Calls {@link DBCollection#ensureIndex(com.mongodb.DBObject, java.lang.String, boolean)} with unique=false
-//     *
-//     * @param keys fields to use for index
-//     * @param name an identifier for the index
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     * @deprecated use {@link DBCollection#createIndex(DBObject, DBObject)} instead
-//     */
-//    @Deprecated
-//    public void ensureIndex( DBObject keys , String name ){
-//        ensureIndex( keys , name , false );
-//    }
-//
-//    /**
-//     * Ensures an index on this collection (that is, the index will be created if it does not exist).
-//     *
-//     * @param keys   fields to use for index
-//     * @param name   an identifier for the index. If null or empty, the default name will be used.
-//     * @param unique if the index should be unique
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     * @deprecated use {@link DBCollection#createIndex(DBObject, DBObject)} instead
-//     */
-//    @Deprecated
-//    public void ensureIndex( DBObject keys , String name , boolean unique ){
-//        DBObject options = defaultOptions( keys );
-//        if (name != null && name.length()>0)
-//            options.put( "name" , name );
-//        if ( unique )
-//            options.put( "unique" , Boolean.TRUE );
-//        ensureIndex( keys , options );
-//    }
-//
-//    /**
-//     * Creates an index on a set of fields, if one does not already exist.
-//     *
-//     * @param keys      an object with a key set of the fields desired for the index
-//     * @param optionsIN options for the index (name, unique, etc)
-//     * @throws MongoException
-//     * @mongodb.driver.manual /administration/indexes-creation/ Index Creation Tutorials
-//     * @deprecated use {@link DBCollection#createIndex(DBObject, DBObject)} instead
-//     */
-//    @Deprecated
-//    public void ensureIndex( final DBObject keys , final DBObject optionsIN ){
-//
-//        if ( checkReadOnly( false ) ) return;
-//
-//        final DBObject options = defaultOptions( keys );
-//        for ( String k : optionsIN.keySet() )
-//            options.put( k , optionsIN.get( k ) );
-//
-//        final String name = options.get( "name" ).toString();
-//
-//        if ( _createdIndexes.contains( name ) )
-//            return;
-//
-//        createIndex( keys , options );
-//        _createdIndexes.add( name );
-//    }
-//
-//    /**
-//     * Clears all indices that have not yet been applied to this collection.
-//     * @deprecated This will be removed in 3.0
-//     */
-//    @Deprecated
-//    public void resetIndexCache(){
-//        _createdIndexes.clear();
-//    }
-//
-//    DBObject defaultOptions( DBObject keys ){
-//        DBObject o = new BasicDBObject();
-//        o.put( "name" , genIndexName( keys ) );
-//        o.put( "ns" , _fullName );
-//        return o;
-//    }
-//
-//    /**
-//     * Convenience method to generate an index name from the set of fields it is over.
-//     * @param keys the names of the fields used in this index
-//     * @return a string representation of this index's fields
-//     *
-//     * @deprecated This method is NOT a part of public API and will be dropped in 3.x versions.
-//     */
-//    @Deprecated
-//    public static String genIndexName( DBObject keys ){
-//        StringBuilder name = new StringBuilder();
-//        for ( String s : keys.keySet() ){
-//            if ( name.length() > 0 )
-//                name.append( '_' );
-//            name.append( s ).append( '_' );
-//            Object val = keys.get( s );
-//            if ( val instanceof Number || val instanceof String )
-//                name.append( val.toString().replace( ' ', '_' ) );
-//        }
-//        return name.toString();
-//    }
-//
-//    // --- END INDEX CODE ---
-//
-//    /**
-//     * Set hint fields for this collection (to optimize queries).
-//     * @param lst a list of {@code DBObject}s to be used as hints
-//     */
-//    public void setHintFields( List<DBObject> lst ){
-//        _hintFields = lst;
-//    }
-//
-//    /**
-//     * Get hint fields for this collection (used to optimize queries).
-//     * @return a list of {@code DBObject} to be used as hints.
-//     */
-//    protected List<DBObject> getHintFields() {
-//        return _hintFields;
-//    }
-//
-//    /**
-//     * Queries for an object in this collection.
-//     *
-//     * @param ref A document outlining the search query
-//     * @return an iterator over the results
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBCursor find( DBObject ref ){
-//        return new DBCursor( this, ref, null, getReadPreference());
-//    }
-//
-//    /**
-//     * Queries for an object in this collection.
-//     * <p>
-//     * An empty DBObject will match every document in the collection.
-//     * Regardless of fields specified, the _id fields are always returned.
-//     * </p>
-//     * <p>
-//     * An example that returns the "x" and "_id" fields for every document
-//     * in the collection that has an "x" field:
-//     * </p>
-//     * <pre>
-//     * {@code
-//     * BasicDBObject keys = new BasicDBObject();
-//     * keys.put("x", 1);
-//     *
-//     * DBCursor cursor = collection.find(new BasicDBObject(), keys);}
-//     * </pre>
-//     *
-//     * @param ref object for which to search
-//     * @param keys fields to return
-//     * @return a cursor to iterate over results
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBCursor find( DBObject ref , DBObject keys ){
-//        return new DBCursor( this, ref, keys, getReadPreference());
-//    }
-//
-//
-//    /**
-//     * Queries for all objects in this collection.
-//     *
-//     * @return a cursor which will iterate over every object
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBCursor find(){
-//        return new DBCursor( this, null, null, getReadPreference());
-//    }
-//
-//    /**
-//     * Returns a single object from this collection.
-//     *
-//     * @return the object found, or {@code null} if the collection is empty
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne(){
-//        return findOne( new BasicDBObject() );
-//    }
-//
-//    /**
-//     * Returns a single object from this collection matching the query.
-//     * @param o the query object
-//     * @return the object found, or {@code null} if no such object exists
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne( DBObject o ){
-//        return findOne( o, null, null, getReadPreference());
-//    }
-//
-//    /**
-//     * Returns a single object from this collection matching the query.
-//     * @param o the query object
-//     * @param fields fields to return
-//     * @return the object found, or {@code null} if no such object exists
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne( DBObject o, DBObject fields ) {
-//        return findOne( o, fields, null, getReadPreference());
-//    }
-//
-//    /**
-//     * Returns a single object from this collection matching the query.
-//     * @param o the query object
-//     * @param fields fields to return
-//     * @param orderBy fields to order by
-//     * @return the object found, or {@code null} if no such object exists
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne( DBObject o, DBObject fields, DBObject orderBy){
-//        return findOne(o, fields, orderBy, getReadPreference());
-//    }
-//
-//    /**
-//     * Get a single document from collection.
-//     *
-//     * @param o        the selection criteria using query operators.
-//     * @param fields   specifies which fields MongoDB will return from the documents in the result set.
-//     * @param readPref {@link ReadPreference} to be used for this operation
-//     * @return A document that satisfies the query specified as the argument to this method, or {@code null} if no such object exists
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne( DBObject o, DBObject fields, ReadPreference readPref ){
-//        return findOne(o, fields, null, readPref);
-//    }
-//
-//    /**
-//     * Get a single document from collection.
-//     *
-//     * @param o        the selection criteria using query operators.
-//     * @param fields   specifies which projection MongoDB will return from the documents in the result set.
-//     * @param orderBy  A document whose fields specify the attributes on which to sort the result set.
-//     * @param readPref {@code ReadPreference} to be used for this operation
-//     * @return A document that satisfies the query specified as the argument to this method, or {@code null} if no such object exists
-//     * @throws MongoException
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     */
-//    public DBObject findOne(DBObject o, DBObject fields, DBObject orderBy, ReadPreference readPref) {
-//        return findOne(o, fields, orderBy, readPref, 0, MILLISECONDS);
-//    }
-//
-//    /**
-//     * Get a single document from collection.
-//     *
-//     * @param o           the selection criteria using query operators.
-//     * @param fields      specifies which projection MongoDB will return from the documents in the result set.
-//     * @param orderBy     A document whose fields specify the attributes on which to sort the result set.
-//     * @param readPref    {@code ReadPreference} to be used for this operation
-//     * @param maxTime     the maximum time that the server will allow this operation to execute before killing it
-//     * @param maxTimeUnit the unit that maxTime is specified in
-//     * @return A document that satisfies the query specified as the argument to this method.
-//     * @mongodb.driver.manual tutorial/query-documents/ Query
-//     * @since 2.12.0
-//     */
-//    DBObject findOne(DBObject o, DBObject fields, DBObject orderBy, ReadPreference readPref,
-//                     long maxTime, TimeUnit maxTimeUnit) {
-//
-//        QueryOpBuilder queryOpBuilder = new QueryOpBuilder().addQuery(o).addOrderBy(orderBy)
-//                .addMaxTimeMS(MILLISECONDS.convert(maxTime, maxTimeUnit));
-//
-//        if (getDB().getMongo().isMongosConnection()) {
-//            queryOpBuilder.addReadPreference(readPref);
-//        }
-//
-//        Iterator<DBObject> i = find(queryOpBuilder.get(), fields, 0, -1, 0, getOptions(), readPref, getDecoder());
-//
-//        DBObject obj = (i.hasNext() ? i.next() : null);
-//        if ( obj != null && ( fields != null && fields.keySet().size() > 0 ) ){
-//            obj.markAsPartialObject();
-//        }
-//        return obj;
-//    }
-//
-//    // Only create a new decoder if there is a decoder factory explicitly set on the collection.  Otherwise return null
-//    // so that DBPort will use a cached decoder from the default factory.
-//    DBDecoder getDecoder() {
-//        return getDBDecoderFactory() != null ? getDBDecoderFactory().create() : null;
-//    }
-//
-//    // Only create a new encoder if there is an encoder factory explicitly set on the collection.  Otherwise return null
-//    // to allow DB to create its own or use a cached one.
-//    private DBEncoder getDBEncoder() {
-//        return getDBEncoderFactory() != null ? getDBEncoderFactory().create() : null;
-//    }
-//
-//
-//    /**
-//     * calls {@link DBCollection#apply(com.mongodb.DBObject, boolean)} with ensureID=true
-//     * @param o {@code DBObject} to which to add fields
-//     * @return the modified parameter object
-//     */
-//    public Object apply( DBObject o ){
-//        return apply( o , true );
-//    }
-//
-//    /**
-//     * calls {@link DBCollection#doapply(com.mongodb.DBObject)}, optionally adding an automatic _id field
-//     * @param jo object to add fields to
-//     * @param ensureID whether to add an {@code _id} field
-//     * @return the modified object {@code o}
-//     */
-//    public Object apply( DBObject jo , boolean ensureID ){
-//
-//        Object id = jo.get( "_id" );
-//        if ( ensureID && id == null ){
-//            id = ObjectId.get();
-//            jo.put( "_id" , id );
-//        }
-//
-//        doapply( jo );
-//
-//        return id;
-//    }
-//
-//    /**
-//     * Update an existing document or insert a document depending on the parameter. If the document does not contain an '_id' field, then
-//     * the method performs an insert with the specified fields in the document as well as an '_id' field with a unique objectid value. If
-//     * the document contains an '_id' field, then the method performs an upsert querying the collection on the '_id' field: <ul> <li>If a
-//     * document does not exist with the specified '_id' value, the method performs an insert with the specified fields in the document.</li>
-//     * <li>If a document exists with the specified '_id' value, the method performs an update, replacing all field in the existing record
-//     * with the fields from the document.</li> </ul>. Calls {@link DBCollection#save(com.mongodb.DBObject, com.mongodb.WriteConcern)} with
-//     * default WriteConcern
-//     *
-//     * @param jo {@link DBObject} to save to the collection.
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/modify-documents/#modify-a-document-with-save-method Save
-//     */
-//    public WriteResult save( DBObject jo ){
-//        return save(jo, getWriteConcern());
-//    }
-//
-//    /**
-//     * Update an existing document or insert a document depending on the parameter. If the document does not contain an '_id' field, then
-//     * the method performs an insert with the specified fields in the document as well as an '_id' field with a unique objectid value. If
-//     * the document contains an '_id' field, then the method performs an upsert querying the collection on the '_id' field: <ul> <li>If a
-//     * document does not exist with the specified '_id' value, the method performs an insert with the specified fields in the document.</li>
-//     * <li>If a document exists with the specified '_id' value, the method performs an update, replacing all field in the existing record
-//     * with the fields from the document.</li> </ul>
-//     *
-//     * @param jo      {@link DBObject} to save to the collection.
-//     * @param concern {@code WriteConcern} to be used during operation
-//     * @return the result of the operation
-//     * @throws MongoException if the operation fails
-//     * @mongodb.driver.manual tutorial/modify-documents/#modify-a-document-with-save-method Save
-//     */
-//    public WriteResult save( DBObject jo, WriteConcern concern ){
-//        if ( checkReadOnly( true ) )
-//            return null;
-//
-//        _checkObject( jo , false , false );
-//
-//        Object id = jo.get( "_id" );
-//
-//        if ( id == null || ( id instanceof ObjectId && ((ObjectId)id).isNew() ) ){
-//            if ( id != null && id instanceof ObjectId )
-//                ((ObjectId)id).notNew();
-//            if ( concern == null )
-//                return insert( jo );
-//            else
-//                return insert( jo, concern );
-//        }
-//
-//        DBObject q = new BasicDBObject();
-//        q.put( "_id" , id );
-//        if ( concern == null )
-//            return update( q , jo , true , false );
-//        else
-//            return update( q , jo , true , false , concern );
-//
-//    }
-//
-//    // ---- DB COMMANDS ----
-//    /**
-//     * Drops all indices from this collection
-//     * @throws MongoException
-//     */
-//    public void dropIndexes(){
-//        dropIndexes( "*" );
-//    }
-//
-//
-//    /**
-//     * Drops an index from this collection
-//     * @param name the index name
-//     * @throws MongoException
-//     */
-//    public void dropIndexes( String name ){
-//        DBObject cmd = BasicDBObjectBuilder.start()
-//                .add( "deleteIndexes" , getName() )
-//                .add( "index" , name )
-//                .get();
-//
-//        resetIndexCache();
-//        CommandResult res = _db.command( cmd );
-//        if (res.ok() || res.getErrorMessage().equals( "ns not found" ))
-//            return;
-//        res.throwOnError();
-//    }
-//
-//    /**
-//     * Drops (deletes) this collection. Use with care.
-//     * @throws MongoException
-//     */
-//    public void drop(){
-//        resetIndexCache();
-//        CommandResult res =_db.command( BasicDBObjectBuilder.start().add( "drop" , getName() ).get() );
-//        if (res.ok() || res.getErrorMessage().equals( "ns not found" ))
-//            return;
-//        res.throwOnError();
-//    }
-//
-//    /**
-//     * Get the number of documents in the collection.
-//     *
-//     * @return the number of documents
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long count(){
-//        return getCount(new BasicDBObject(), null);
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.
-//     *
-//     * @param query specifies the selection criteria
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long count(DBObject query){
-//        return getCount(query, null);
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.
-//     *
-//     * @param query     specifies the selection criteria
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long count(DBObject query, ReadPreference readPrefs ){
-//        return getCount(query, null, readPrefs);
-//    }
-//
-//
-//    /**
-//     * Get the count of documents in a collection.  Calls {@link DBCollection#getCount(com.mongodb.DBObject, com.mongodb.DBObject)} with an
-//     * empty query and null fields.
-//     *
-//     * @return the number of documents in the collection
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(){
-//        return getCount(new BasicDBObject(), null);
-//    }
-//
-//    /**
-//     * Get the count of documents in a collection. Calls {@link DBCollection#getCount(com.mongodb.DBObject, com.mongodb.DBObject,
-//     * com.mongodb.ReadPreference)} with empty query and null fields.
-//     *
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(ReadPreference readPrefs){
-//        return getCount(new BasicDBObject(), null, readPrefs);
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria. Calls {@link DBCollection#getCount(com.mongodb.DBObject,
-//     * com.mongodb.DBObject)} with null fields.
-//     *
-//     * @param query specifies the selection criteria
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(DBObject query){
-//        return getCount(query, null);
-//    }
-//
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria. Calls {@link DBCollection#getCount(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, long, long)} with limit=0 and skip=0
-//     *
-//     * @param query  specifies the selection criteria
-//     * @param fields this is ignored
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(DBObject query, DBObject fields){
-//        return getCount( query , fields , 0 , 0 );
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.  Calls {@link DBCollection#getCount(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, long, long, com.mongodb.ReadPreference)} with limit=0 and skip=0
-//     *
-//     * @param query     specifies the selection criteria
-//     * @param fields    this is ignored
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(DBObject query, DBObject fields, ReadPreference readPrefs){
-//        return getCount( query , fields , 0 , 0, readPrefs );
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.  Calls {@link DBCollection#getCount(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, long, long, com.mongodb.ReadPreference)} with the DBCollection's ReadPreference
-//     *
-//     * @param query          specifies the selection criteria
-//     * @param fields     this is ignored
-//     * @param limit          limit the count to this value
-//     * @param skip           number of documents to skip
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(DBObject query, DBObject fields, long limit, long skip){
-//        return getCount(query, fields, limit, skip, getReadPreference());
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.
-//     *
-//     * @param query     specifies the selection criteria
-//     * @param fields    this is ignored
-//     * @param limit     limit the count to this value
-//     * @param skip      number of documents to skip
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     */
-//    public long getCount(DBObject query, DBObject fields, long limit, long skip, ReadPreference readPrefs ){
-//        return getCount(query, fields, limit, skip, readPrefs, 0, MILLISECONDS);
-//    }
-//
-//    /**
-//     * Get the count of documents in collection that would match a criteria.
-//     *
-//     * @param query       specifies the selection criteria
-//     * @param fields      this is ignored
-//     * @param limit       limit the count to this value
-//     * @param skip        number of documents to skip
-//     * @param readPrefs   {@link ReadPreference} to be used for this operation
-//     * @param maxTime     the maximum time that the server will allow this operation to execute before killing it
-//     * @param maxTimeUnit the unit that maxTime is specified in
-//     * @return the number of documents that matches selection criteria
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/count/ Count
-//     * @since 2.12
-//     */
-//    long getCount(final DBObject query, final DBObject fields, final long limit, final long skip,
-//                  final ReadPreference readPrefs, final long maxTime, final TimeUnit maxTimeUnit) {
-//        BasicDBObject cmd = new BasicDBObject();
-//        cmd.put("count", getName());
-//        cmd.put("query", query);
-//        if (fields != null) {
-//            cmd.put("fields", fields);
-//        }
-//
-//        if ( limit > 0 )
-//            cmd.put( "limit" , limit );
-//        if ( skip > 0 )
-//            cmd.put( "skip" , skip );
-//        if (maxTime > 0) {
-//            cmd.put("maxTimeMS", MILLISECONDS.convert(maxTime, maxTimeUnit));
-//        }
-//
-//        CommandResult res = _db.command(cmd,getOptions(),readPrefs);
-//        if ( ! res.ok() ){
-//            String errmsg = res.getErrorMessage();
-//
-//            if ( errmsg.equals("ns does not exist") ||
-//                    errmsg.equals("ns missing" ) ){
-//                // for now, return 0 - lets pretend it does exist
-//                return 0;
-//            }
-//
-//            res.throwOnError();
-//        }
-//
-//        return res.getLong("n");
-//    }
-//
-//    CommandResult command(DBObject cmd, int options, ReadPreference readPrefs){
-//        return _db.command(cmd,getOptions(),readPrefs);
-//    }
-//
-//    /**
-//     * Calls {@link DBCollection#rename(java.lang.String, boolean)} with dropTarget=false
-//     * @param newName new collection name (not a full namespace)
-//     * @return the new collection
-//     * @throws MongoException
-//     */
-//    public DBCollection rename( String newName ){
-//        return rename(newName, false);
-//    }
-//
-//    /**
-//     * Renames of this collection to newName
-//     * @param newName new collection name (not a full namespace)
-//     * @param dropTarget if a collection with the new name exists, whether or not to drop it
-//     * @return the new collection
-//     * @throws MongoException
-//     */
-//    public DBCollection rename( String newName, boolean dropTarget ){
-//        CommandResult ret =
-//                _db.getSisterDB( "admin" )
-//                        .command( BasicDBObjectBuilder.start()
-//                                .add( "renameCollection" , _fullName )
-//                                .add( "to" , _db._name + "." + newName )
-//                                .add( "dropTarget" , dropTarget )
-//                                .get() );
-//        ret.throwOnError();
-//        resetIndexCache();
-//        return _db.getCollection( newName );
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL. Calls {@link DBCollection#group(com.mongodb.DBObject,
-//     * com.mongodb.DBObject, com.mongodb.DBObject, java.lang.String, java.lang.String)} with finalize=null
-//     *
-//     * @param key     specifies one or more document fields to group
-//     * @param cond    specifies the selection criteria to determine which documents in the collection to process
-//     * @param initial initializes the aggregation result document
-//     * @param reduce  specifies an $reduce Javascript function, that operates on the documents during the grouping operation
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     */
-//    public DBObject group( DBObject key , DBObject cond , DBObject initial , String reduce ){
-//        return group( key , cond , initial , reduce , null );
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL.
-//     *
-//     * @param key      specifies one or more document fields to group
-//     * @param cond     specifies the selection criteria to determine which documents in the collection to process
-//     * @param initial  initializes the aggregation result document
-//     * @param reduce   specifies an $reduce Javascript function, that operates on the documents during the grouping operation
-//     * @param finalize specifies a Javascript function that runs each item in the result set before final value will be returned
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     */
-//    public DBObject group( DBObject key , DBObject cond , DBObject initial , String reduce , String finalize ){
-//        GroupCommand cmd = new GroupCommand(this, key, cond, initial, reduce, finalize);
-//        return group( cmd );
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL.
-//     *
-//     * @param key       specifies one or more document fields to group
-//     * @param cond      specifies the selection criteria to determine which documents in the collection to process
-//     * @param initial   initializes the aggregation result document
-//     * @param reduce    specifies an $reduce Javascript function, that operates on the documents during the grouping operation
-//     * @param finalize  specifies a Javascript function that runs each item in the result set before final value will be returned
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     */
-//    public DBObject group( DBObject key , DBObject cond , DBObject initial , String reduce , String finalize, ReadPreference readPrefs ){
-//        GroupCommand cmd = new GroupCommand(this, key, cond, initial, reduce, finalize);
-//        return group( cmd, readPrefs );
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL.
-//     *
-//     * @param cmd the group command containing the details of how to perform the operation.
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     */
-//    public DBObject group( GroupCommand cmd ) {
-//        return group(cmd, getReadPreference());
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL.
-//     *
-//     * @param cmd       the group command containing the details of how to perform the operation.
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     */
-//    public DBObject group( GroupCommand cmd, ReadPreference readPrefs ) {
-//        CommandResult res =  _db.command( cmd.toDBObject(), getOptions(), readPrefs );
-//        res.throwOnError();
-//        return (DBObject)res.get( "retval" );
-//    }
-//
-//    /**
-//     * Group documents in a collection by the specified key and performs simple aggregation functions such as computing counts and sums.
-//     * This is analogous to a {@code SELECT ... GROUP BY} statement in SQL.
-//     *
-//     * @param args object representing the arguments to the group function
-//     * @return a document with the grouped records as well as the command meta-data
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/group/ Group Command
-//     * @deprecated use {@link DBCollection#group(com.mongodb.GroupCommand)} instead.  This method will be removed in 3.0
-//     */
-//    @Deprecated
-//    public DBObject group( DBObject args ){
-//        args.put( "ns" , getName() );
-//        CommandResult res =  _db.command( new BasicDBObject( "group" , args ), getOptions(), getReadPreference() );
-//        res.throwOnError();
-//        return (DBObject)res.get( "retval" );
-//    }
-//
-//    /**
-//     * Find the distinct values for a specified field across a collection and returns the results in an array.
-//     *
-//     * @param key Specifies the field for which to return the distinct values
-//     * @return A {@code List} of the distinct values
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/distinct Distinct Command
-//     */
-//    public List distinct( String key ){
-//        return distinct( key , new BasicDBObject() );
-//    }
-//
-//    /**
-//     * Find the distinct values for a specified field across a collection and returns the results in an array.
-//     *
-//     * @param key       Specifies the field for which to return the distinct values
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return A {@code List} of the distinct values
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/distinct Distinct Command
-//     */
-//    public List distinct( String key, ReadPreference readPrefs ){
-//        return distinct( key , new BasicDBObject(), readPrefs );
-//    }
-//
-//    /**
-//     * Find the distinct values for a specified field across a collection and returns the results in an array.
-//     *
-//     * @param key   Specifies the field for which to return the distinct values
-//     * @param query specifies the selection query to determine the subset of documents from which to retrieve the distinct values
-//     * @return A {@code List} of the distinct values
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/distinct Distinct Command
-//     */
-//    public List distinct( String key , DBObject query ){
-//        return distinct(key, query, getReadPreference());
-//    }
-//
-//    /**
-//     * Find the distinct values for a specified field across a collection and returns the results in an array.
-//     *
-//     * @param key       Specifies the field for which to return the distinct values
-//     * @param query     specifies the selection query to determine the subset of documents from which to retrieve the distinct values
-//     * @param readPrefs {@link ReadPreference} to be used for this operation
-//     * @return A {@code List} of the distinct values
-//     * @throws MongoException
-//     * @mongodb.driver.manual reference/command/distinct Distinct Command
-//     */
-//    public List distinct( String key , DBObject query, ReadPreference readPrefs ){
-//        DBObject c = BasicDBObjectBuilder.start()
-//                .add( "distinct" , getName() )
-//                .add( "key" , key )
-//                .add( "query" , query )
-//                .get();
-//
-//        CommandResult res = _db.command( c, getOptions(), readPrefs );
-//        res.throwOnError();
-//        return (List)(res.get( "values" ));
-//    }
-//
-//    /**
-//     * Allows you to run map-reduce aggregation operations over a collection.  Runs the command in REPLACE output mode (saves to named
-//     * collection).
-//     *
-//     * @param map            a JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-//     * @param reduce         a JavaScript function that "reduces" to a single object all the values associated with a particular key.
-//     * @param outputTarget   specifies the location of the result of the map-reduce operation (optional) - leave null if want to use temp
-//     *                       collection
-//     * @param query          specifies the selection criteria using query operators for determining the documents input to the map
-//     *                       function.
-//     * @return A MapReduceOutput which contains the results of this map reduce operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual core/map-reduce/ Map-Reduce
-//     */
-//    public MapReduceOutput mapReduce( String map , String reduce , String outputTarget , DBObject query ){
-//        return mapReduce( new MapReduceCommand( this , map , reduce , outputTarget , MapReduceCommand.OutputType.REPLACE, query ) );
-//    }
-//
-//    /**
-//     * Allows you to run map-reduce aggregation operations over a collection and saves to a named collection.
-//     * Specify an outputType to control job execution<ul>
-//     * <li>INLINE - Return results inline</li>
-//     * <li>REPLACE - Replace the output collection with the job output</li>
-//     * <li>MERGE - Merge the job output with the existing contents of outputTarget</li>
-//     * <li>REDUCE - Reduce the job output with the existing contents of outputTarget</li>
-//     * </ul>
-//     *
-//     * @param map          a JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-//     * @param reduce       a JavaScript function that "reduces" to a single object all the values associated with a particular key.
-//     * @param outputTarget specifies the location of the result of the map-reduce operation (optional) - leave null if want to use temp
-//     *                     collection
-//     * @param outputType   specifies the type of job output
-//     * @param query        specifies the selection criteria using query operators for determining the documents input to the map function.
-//     * @return A MapReduceOutput which contains the results of this map reduce operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual core/map-reduce/ Map-Reduce
-//     */
-//    public MapReduceOutput mapReduce(String map, String reduce, String outputTarget, MapReduceCommand.OutputType outputType,
-//                                     DBObject query) {
-//        return mapReduce( new MapReduceCommand( this , map , reduce , outputTarget , outputType , query ) );
-//    }
-//
-//    /**
-//     * Allows you to run map-reduce aggregation operations over a collection and saves to a named collection.
-//     * Specify an outputType to control job execution<ul>
-//     * <li>INLINE - Return results inline</li>
-//     * <li>REPLACE - Replace the output collection with the job output</li>
-//     * <li>MERGE - Merge the job output with the existing contents of outputTarget</li>
-//     * <li>REDUCE - Reduce the job output with the existing contents of outputTarget</li>
-//     * </ul>
-//     *
-//     * @param map            a JavaScript function that associates or "maps" a value with a key and emits the key and value pair.
-//     * @param reduce         a JavaScript function that "reduces" to a single object all the values associated with a particular key.
-//     * @param outputTarget   specifies the location of the result of the map-reduce operation (optional) - leave null if want to use temp
-//     *                       collection
-//     * @param outputType     specifies the type of job output
-//     * @param query          specifies the selection criteria using query operators for determining the documents input to the map
-//     *                       function.
-//     * @param readPrefs the read preference specifying where to run the query.  Only applied for Inline output type
-//     * @return A MapReduceOutput which contains the results of this map reduce operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual core/map-reduce/ Map-Reduce
-//     */
-//    public MapReduceOutput mapReduce(String map, String reduce, String outputTarget, MapReduceCommand.OutputType outputType, DBObject query,
-//                                     ReadPreference readPrefs) {
-//        MapReduceCommand command = new MapReduceCommand( this , map , reduce , outputTarget , outputType , query );
-//        command.setReadPreference(readPrefs);
-//        return mapReduce( command );
-//    }
-//
-//    /**
-//     * Allows you to run map-reduce aggregation operations over a collection and saves to a named collection.
-//     *
-//     * @param command object representing the parameters to the operation
-//     * @return A MapReduceOutput which contains the results of this map reduce operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual core/map-reduce/ Map-Reduce
-//     */
-//    public MapReduceOutput mapReduce( MapReduceCommand command ){
-//        DBObject cmd = command.toDBObject();
-//        // if type in inline, then query options like slaveOk is fine
-//        CommandResult res = _db.command( cmd, getOptions(), command.getReadPreference() != null ? command.getReadPreference() : getReadPreference() );
-//        res.throwOnError();
-//        return new MapReduceOutput( this , cmd, res );
-//    }
-//
-//    /**
-//     * Allows you to run map-reduce aggregation operations over a collection
-//     *
-//     * @param command document representing the parameters to this operation.
-//     * @return A MapReduceOutput which contains the results of this map reduce operation
-//     * @throws MongoException
-//     * @mongodb.driver.manual core/map-reduce/ Map-Reduce
-//     * @deprecated Use {@link com.mongodb.DBCollection#mapReduce(MapReduceCommand)} instead
-//     */
-//    @Deprecated
-//    public MapReduceOutput mapReduce( DBObject command ){
-//        if ( command.get( "mapreduce" ) == null && command.get( "mapReduce" ) == null )
-//            throw new IllegalArgumentException( "need mapreduce arg" );
-//        CommandResult res = _db.command( command, getOptions(), getReadPreference() );
-//        res.throwOnError();
-//        return new MapReduceOutput( this , command, res );
-//    }
-//
-//    /**
-//     * Method implements aggregation framework.
-//     *
-//     * @param firstOp       requisite first operation to be performed in the aggregation pipeline
-//     * @param additionalOps additional operations to be performed in the aggregation pipeline
-//     * @return the aggregation operation's result set
-//     * @deprecated Use {@link com.mongodb.DBCollection#aggregate(java.util.List)} instead
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     *
-//     * @mongodb.server.release 2.2
-//     */
-//    @Deprecated
-//    @SuppressWarnings("unchecked")
-//    public AggregationOutput aggregate(final DBObject firstOp, final DBObject... additionalOps) {
-//        List<DBObject> pipeline = new ArrayList<DBObject>();
-//        pipeline.add(firstOp);
-//        Collections.addAll(pipeline, additionalOps);
-//        return aggregate(pipeline);
-//    }
-//
-//    /**
-//     * Method implements aggregation framework.
-//     *
-//     * @param pipeline operations to be performed in the aggregation pipeline
-//     * @return the aggregation's result set
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     *
-//     * @mongodb.server.release 2.2
-//     */
-//    public AggregationOutput aggregate(final List<DBObject> pipeline) {
-//        return aggregate(pipeline, getReadPreference());
-//    }
-//
-//    /**
-//     * Method implements aggregation framework.
-//     *
-//     * @param pipeline       operations to be performed in the aggregation pipeline
-//     * @param readPreference the read preference specifying where to run the query
-//     * @return the aggregation's result set
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     *
-//     * @mongodb.server.release 2.2
-//     */
-//    public AggregationOutput aggregate(final List<DBObject> pipeline, ReadPreference readPreference) {
-//        AggregationOptions options = AggregationOptions.builder()
-//                .outputMode(AggregationOptions.OutputMode.INLINE)
-//                .build();
-//
-//        DBObject command = prepareCommand(pipeline, options);
-//
-//        CommandResult res = _db.command(command, getOptions(), readPreference);
-//
-//        return new AggregationOutput(command, res);
-//    }
-//
-//    /**
-//     * Method implements aggregation framework.
-//     *
-//     * @param pipeline operations to be performed in the aggregation pipeline
-//     * @param options  options to apply to the aggregation
-//     * @return the aggregation operation's result set
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     *
-//     * @mongodb.server.release 2.2
-//     */
-//    public Cursor aggregate(final List<DBObject> pipeline, AggregationOptions options) {
-//        return aggregate(pipeline, options, getReadPreference());
-//    }
-//
-//    /**
-//     * Method implements aggregation framework.
-//     *
-//     * @param pipeline operations to be performed in the aggregation pipeline
-//     * @param options options to apply to the aggregation
-//     * @param readPreference {@link ReadPreference} to be used for this operation
-//     * @return the aggregation operation's result set
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     *
-//     * @mongodb.server.release 2.2
-//     */
-//    public abstract Cursor aggregate(final List<DBObject> pipeline, final AggregationOptions options,
-//                                     final ReadPreference readPreference);
-//
-//    /**
-//     * Return the explain plan for the aggregation pipeline.
-//     *
-//     * @param pipeline the aggregation pipeline to explain
-//     * @param options  the options to apply to the aggregation
-//     * @return the command result.  The explain output may change from release to release, so best to simply log this.
-//     * @mongodb.driver.manual core/aggregation-pipeline/ Aggregation
-//     * @mongodb.driver.manual reference/operator/meta/explain/ Explain query
-//     *
-//     * @mongodb.server.release 2.6
-//     */
-//    public CommandResult explainAggregate(List<DBObject> pipeline, AggregationOptions options) {
-//        DBObject command = prepareCommand(pipeline, options);
-//        command.put("explain", true);
-//        final CommandResult res = _db.command(command, getOptions(), getReadPreference());
-//        res.throwOnError();
-//
-//        return res;
-//    }
-//
-//    /**
-//     * Return a list of cursors over the collection that can be used to scan it in parallel.
-//     * <p>
-//     *     Note: As of MongoDB 2.6, this method will work against a mongod, but not a mongos.
-//     * </p>
-//     *
-//     * @param options the parallel scan options
-//     * @return a list of cursors, whose size may be less than the number requested
-//     * @since 2.12
-//     *
-//     * @mongodb.server.release 2.6
-//     */
-//    public abstract List<Cursor> parallelScan(final ParallelScanOptions options);
-//
-//    /**
-//     * Creates a builder for an ordered bulk operation.  Write requests included in the bulk operations will be executed in order,
-//     * and will halt on the first failure.
-//     *
-//     * @return the builder
-//     *
-//     * @since 2.12
-//     */
-//    public BulkWriteOperation initializeOrderedBulkOperation() {
-//        return new BulkWriteOperation(true, this);
-//    }
-//
-//    /**
-//     * Creates a builder for an unordered bulk operation. Write requests included in the bulk operation will be executed in an undefined
-//     * order, and all requests will be executed even if some fail.
-//     *
-//     * @return the builder
-//     *
-//     * @since 2.12
-//     */
-//    public BulkWriteOperation initializeUnorderedBulkOperation() {
-//        return new BulkWriteOperation(false, this);
-//    }
-//
-//    BulkWriteResult executeBulkWriteOperation(final boolean ordered, final List<WriteRequest> requests) {
-//        return executeBulkWriteOperation(ordered, requests, getWriteConcern());
-//    }
-//
-//    BulkWriteResult executeBulkWriteOperation(final boolean ordered, final List<WriteRequest> requests, final WriteConcern writeConcern) {
-//        return executeBulkWriteOperation(ordered, requests, writeConcern, getDBEncoder());
-//    }
-//
-//    abstract BulkWriteResult executeBulkWriteOperation(final boolean ordered, final List<WriteRequest> requests,
-//                                                       final WriteConcern writeConcern, final DBEncoder encoder);
-//
-//    @SuppressWarnings("unchecked")
-//    DBObject prepareCommand(final List<DBObject> pipeline, final AggregationOptions options) {
-//        if (pipeline.isEmpty()) {
-//            throw new MongoException("Aggregation pipelines can not be empty");
-//        }
-//
-//        DBObject command = new BasicDBObject("aggregate", getName());
-//        command.put("pipeline", pipeline);
-//
-//        if (options.getOutputMode() == AggregationOptions.OutputMode.CURSOR) {
-//            BasicDBObject cursor = new BasicDBObject();
-//            if (options.getBatchSize() != null) {
-//                cursor.put("batchSize", options.getBatchSize());
-//            }
-//            command.put("cursor", cursor);
-//        }
-//        if (options.getMaxTime(MILLISECONDS) > 0) {
-//            command.put("maxTimeMS", options.getMaxTime(MILLISECONDS));
-//        }
-//
-//        if (options.getAllowDiskUse() != null) {
-//            command.put("allowDiskUse", options.getAllowDiskUse());
-//        }
-//
-//        return command;
-//    }
-//
-//    /**
-//     * Return a list of the indexes for this collection.  Each object in the list is the "info document" from MongoDB
-//     *
-//     * @return list of index documents
-//     * @throws MongoException
-//     */
-//    public List<DBObject> getIndexInfo() {
-//        BasicDBObject cmd = new BasicDBObject();
-//        cmd.put("ns", getFullName());
-//
-//        DBCursor cur = _db.getCollection("system.indexes").find(cmd);
-//
-//        List<DBObject> list = new ArrayList<DBObject>();
-//
-//        while(cur.hasNext()) {
-//            list.add(cur.next());
-//        }
-//
-//        return list;
-//    }
-//
-//    /**
-//     * Drops an index from this collection
-//     * @param keys keys of the index
-//     * @throws MongoException
-//     */
-//    public void dropIndex( DBObject keys ){
-//        dropIndexes( genIndexName( keys ) );
-//    }
-//
-//    /**
-//     * Drops an index from this collection
-//     * @param name name of index to drop
-//     * @throws MongoException
-//     */
-//    public void dropIndex( String name ){
-//        dropIndexes( name );
-//    }
-//
-//    /**
-//     * The collStats command returns a variety of storage statistics for a given collection
-//     *
-//     * @return a CommandResult containing the statistics about this collection
-//     * @mongodb.driver.manual /reference/command/collStats/ collStats command
-//     */
-//    public CommandResult getStats() {
-//        return getDB().command(new BasicDBObject("collstats", getName()), getOptions(), getReadPreference());
-//    }
-//
-//    /**
-//     * Checks whether this collection is capped
-//     *
-//     * @return true if this is a capped collection
-//     * @throws MongoException
-//     * @mongodb.driver.manual /core/capped-collections/#check-if-a-collection-is-capped Capped Collections
-//     */
-//    public boolean isCapped() {
-//        CommandResult stats = getStats();
-//        Object capped = stats.get("capped");
-//        return(capped != null && ( capped.equals(1) || capped.equals(true) ) );
-//    }
-//
-//    // ------
-//
+@SuppressWarnings("deprecation")
+public class SafeDBCollection { }
+//public class SafeDBCollection extends DBCollection {
 //    /**
 //     * Initializes a new collection. No operation is actually performed on the database.
+//     *
+//     * <p>
+//     *      SafeDBCollection.fromCollection( db.getCollection("persons") , Map userSecurityAttributes );
+//     *        above is a simple use case.  Given a DBCollection for the "persons" mongo collection
+//     *        and a set of UserSecurityAttributes, e.g.
+//     *        clearance="TS"
+//     *        SCI=[ "TK", "SI", "G", "HCS" ]
+//     *        CIT="US"
+//
+//     * </p>
 //     * @param base database in which to create the collection
 //     * @param name the name of the collection
 //     */
-//    protected DBCollection( DB base , String name ){
-//        _db = base;
-//        _name = name;
-//        _fullName = _db.getName() + "." + name;
-//        _options = new Bytes.OptionHolder( _db._options );
-//    }
-//
-//    /**
-//     * @deprecated This method should not be a part of API.
-//     *             If you override one of the {@code DBCollection} methods please rely on superclass
-//     *             implementation in checking argument correctness and validity.
-//     */
-//    @Deprecated
-//    protected DBObject _checkObject(DBObject o, boolean canBeNull, boolean query) {
-//        if (o == null) {
-//            if (canBeNull)
-//                return null;
-//            throw new IllegalArgumentException("can't be null");
-//        }
-//
-//        if (o.isPartialObject() && !query)
-//            throw new IllegalArgumentException("can't save partial objects");
-//
-//        if (!query) {
-//            _checkKeys(o);
-//        }
-//        return o;
-//    }
-//
-//    /**
-//     * Checks key strings for invalid characters.
-//     */
-//    private void _checkKeys( DBObject o ) {
-//        if ( o instanceof LazyDBObject || o instanceof LazyDBList )
-//            return;
-//
-//        for ( String s : o.keySet() ){
-//            validateKey( s );
-//            _checkValue( o.get( s ) );
-//        }
-//    }
-//
-//    /**
-//     * Checks key strings for invalid characters.
-//     */
-//    private void _checkKeys( Map<String, Object> o ) {
-//        for ( Map.Entry<String, Object> cur : o.entrySet() ){
-//            validateKey( cur.getKey() );
-//            _checkValue( cur.getValue() );
-//        }
-//    }
-//
-//    private void _checkValues( final List list ) {
-//        for ( Object cur : list ) {
-//            _checkValue( cur );
-//        }
-//    }
-//
-//    private void _checkValue(final Object value) {
-//        if ( value instanceof DBObject ) {
-//            _checkKeys( (DBObject)value );
-//        } else if ( value instanceof Map ) {
-//            _checkKeys( (Map<String, Object>)value );
-//        } else if ( value instanceof List ) {
-//            _checkValues((List) value);
-//        }
-//    }
-//
-//    /**
-//     * Check for invalid key names
-//     * @param s the string field/key to check
-//     * @exception IllegalArgumentException if the key is not valid.
-//     */
-//    private void validateKey(String s ) {
-//        if ( s.contains( "\0" ) )
-//            throw new IllegalArgumentException( "Document field names can't have a NULL character. (Bad Key: '" + s + "')" );
-//        if ( s.contains( "." ) )
-//            throw new IllegalArgumentException( "Document field names can't have a . in them. (Bad Key: '" + s + "')" );
-//        if ( s.startsWith( "$" ) )
-//            throw new IllegalArgumentException( "Document field names can't start with '$' (Bad Key: '" + s + "')" );
-//    }
-//
-//    /**
-//     * Find a collection that is prefixed with this collection's name. A typical use of this might be
-//     * <pre>{@code
-//     *    DBCollection users = mongo.getCollection( "wiki" ).getCollection( "users" );
-//     * }</pre>
-//     * Which is equivalent to
-//     * <pre>{@code
-//     *   DBCollection users = mongo.getCollection( "wiki.users" );
-//     * }</pre>
-//     *
-//     * @param n the name of the collection to find
-//     * @return the matching collection
-//     */
-//    public DBCollection getCollection( String n ){
-//        return _db.getCollection( _name + "." + n );
-//    }
-//
-//    /**
-//     * Returns the name of this collection.
-//     * @return  the name of this collection
-//     */
-//    public String getName(){
-//        return _name;
-//    }
-//
-//    /**
-//     * Returns the full name of this collection, with the database name as a prefix.
-//     * @return  the name of this collection
-//     */
-//    public String getFullName(){
-//        return _fullName;
-//    }
-//
-//    /**
-//     * Returns the database this collection is a member of.
-//     * @return this collection's database
-//     */
-//    public DB getDB(){
-//        return _db;
-//    }
-//
-//    /**
-//     * Returns if this collection's database is read-only
-//     *
-//     * @param strict if an exception should be thrown if the database is read-only
-//     * @return if this collection's database is read-only
-//     * @throws RuntimeException if the database is read-only and {@code strict} is set
-//     * @deprecated See {@link DB#setReadOnly(Boolean)}
-//     */
-//    @Deprecated
-//    protected boolean checkReadOnly( boolean strict ){
-//        if ( ! _db._readOnly )
-//            return false;
-//
-//        if ( ! strict )
-//            return true;
-//
-//        throw new IllegalStateException( "db is read only" );
-//    }
-//
-//    @Override
-//    public int hashCode(){
-//        return _fullName.hashCode();
-//    }
-//
-//    @Override
-//    public boolean equals( Object o ){
-//        return o == this;
-//    }
-//
-//    @Override
-//    public String toString(){
-//        return _name;
-//    }
-//
-//    /**
-//     * Sets a default class for objects in this collection; null resets the class to nothing.
-//     * @param c the class
-//     * @throws IllegalArgumentException if {@code c} is not a DBObject
-//     */
-//    public void setObjectClass( Class c ){
-//        if ( c == null ){
-//            // reset
-//            _wrapper = null;
-//            _objectClass = null;
-//            return;
-//        }
-//
-//        if ( ! DBObject.class.isAssignableFrom( c ) )
-//            throw new IllegalArgumentException( c.getName() + " is not a DBObject" );
-//        _objectClass = c;
-//        if ( ReflectionDBObject.class.isAssignableFrom( c ) )
-//            _wrapper = ReflectionDBObject.getWrapper( c );
-//        else
-//            _wrapper = null;
-//    }
-//
-//    /**
-//     * Gets the default class for objects in the collection
-//     *
-//     * @return the class
-//     */
-//    public Class getObjectClass(){
-//        return _objectClass;
-//    }
-//
-//    /**
-//     * Sets the internal class for the given path in the document hierarchy
-//     *
-//     * @param path the path to map the given Class to
-//     * @param c    the Class to map the given path to
-//     */
-//    public void setInternalClass( String path , Class c ){
-//        _internalClass.put( path , c );
-//    }
-//
-//    /**
-//     * Gets the internal class for the given path in the document hierarchy
-//     *
-//     * @param path the path to map the given Class to
-//     * @return the class for a given path in the hierarchy
-//     */
-//    protected Class getInternalClass( String path ){
-//        Class c = _internalClass.get( path );
-//        if ( c != null )
-//            return c;
-//
-//        if ( _wrapper == null )
-//            return null;
-//        return _wrapper.getInternalClass( path );
-//    }
-//
-//    /**
-//     * Set the write concern for this collection. Will be used for
-//     * writes to this collection. Overrides any setting of write
-//     * concern at the DB level. See the documentation for
-//     * {@link WriteConcern} for more information.
-//     *
-//     * @param concern write concern to use
-//     */
-//    public void setWriteConcern( WriteConcern concern ){
-//        _concern = concern;
-//    }
-//
-//    /**
-//     * Get the {@link WriteConcern} for this collection.
-//     *
-//     * @return the default write concern for this collection
-//     */
-//    public WriteConcern getWriteConcern(){
-//        if ( _concern != null )
-//            return _concern;
-//        return _db.getWriteConcern();
-//    }
-//
-//    /**
-//     * Sets the read preference for this collection. Will be used as default
-//     * for reads from this collection; overrides DB & Connection level settings.
-//     * See the * documentation for {@link ReadPreference} for more information.
-//     *
-//     * @param preference Read Preference to use
-//     */
-//    public void setReadPreference( ReadPreference preference ){
-//        _readPref = preference;
-//    }
-//
-//    /**
-//     * Gets the {@link ReadPreference}.
-//     *
-//     * @return the default read preference for this collection
-//     */
-//    public ReadPreference getReadPreference(){
-//        if ( _readPref != null )
-//            return _readPref;
-//        return _db.getReadPreference();
-//    }
-//    /**
-//     * Makes this query ok to run on a slave node
-//     *
-//     * @deprecated Replaced with {@link ReadPreference#secondaryPreferred()}
-//     */
-//    @Deprecated
-//    public void slaveOk(){
-//        addOption( Bytes.QUERYOPTION_SLAVEOK );
-//    }
-//
-//    /**
-//     * Adds the given flag to the query options.
-//     *
-//     * @param option value to be added
-//     */
-//    public void addOption( int option ){
-//        _options.add(option);
-//    }
-//
-//    /**
-//     * Sets the query options, overwriting previous value.
-//     *
-//     * @param options bit vector of query options
-//     */
-//    public void setOptions( int options ){
-//        _options.set(options);
-//    }
-//
-//    /**
-//     * Resets the default query options
-//     */
-//    public void resetOptions(){
-//        _options.reset();
-//    }
-//
-//    /**
-//     * Gets the default query options
-//     *
-//     * @return bit vector of query options
-//     */
-//    public int getOptions(){
-//        return _options.get();
-//    }
-//
-//    /**
-//     * Set a customer decoder factory for this collection.  Set to null to use the default from MongoOptions.
-//     *
-//     * @param fact the factory to set.
-//     */
-//    public synchronized void setDBDecoderFactory(DBDecoderFactory fact) {
-//        _decoderFactory = fact;
-//    }
-//
-//    /**
-//     * Get the decoder factory for this collection.  A null return value means that the default from MongoOptions is being used.
-//     *
-//     * @return the factory
-//     */
-//    public synchronized DBDecoderFactory getDBDecoderFactory() {
-//        return _decoderFactory;
-//    }
-//
-//    /**
-//     * Set a customer encoder factory for this collection.  Set to null to use the default from MongoOptions.
-//     *
-//     * @param fact the factory to set.
-//     */
-//    public synchronized void setDBEncoderFactory(DBEncoderFactory fact) {
-//        _encoderFactory = fact;
-//    }
-//
-//    /**
-//     * Get the encoder factory for this collection.  A null return value means that the default from MongoOptions is being used.
-//     *
-//     * @return the factory
-//     */
-//    public synchronized DBEncoderFactory getDBEncoderFactory() {
-//        return _encoderFactory;
+//    protected SafeDBCollection(DB base, String name) {
+//        super(base, name);
 //    }
 //
 //
 //    private WriteConcern _concern = null;
 //    private ReadPreference _readPref = null;
 //    private DBCollection _wrapped;
-//    private CapoSecObject _userSecurityString;
+//    private UserSecurityAttributes  _userSecurityString;
 //
-//    /**
-//     * @deprecated Please use {@link #getObjectClass()} and {@link #setObjectClass(Class)} instead.
-//     */
-//    @Deprecated
-//    protected Class _objectClass = null;
-//    private Map<String,Class> _internalClass = Collections.synchronizedMap( new HashMap<String,Class>() );
-//    private ReflectionDBObject.JavaWrapper _wrapper = null;
+//// from class DBCollectionImpl 
+//    private final DBApiLayer db;
+//    private final String namespace;
 //
-//    /**
-//     * @deprecated This will be removed in 3.0
-//     */
-//    @Deprecated
-//    final private Set<String> _createdIndexes = new HashSet<String>();
+//    DBCollectionImpl(final DBApiLayer db, String name){
+//        super(db, name );
+//        namespace = db._root + "." + name;
+//        this.db = db;
+//    }
 //
-}
+//    @Override
+//    QueryResultIterator find(DBObject ref, DBObject fields, int numToSkip, int batchSize, int limit, int options,
+//                             ReadPreference readPref, DBDecoder decoder) {
+//        return find(ref, fields, numToSkip, batchSize, limit, options, readPref, decoder, DefaultDBEncoder.FACTORY.create());
+//    }
+//
+//    @Override
+//    QueryResultIterator find(DBObject ref, DBObject fields, int numToSkip, int batchSize, int limit, int options,
+//                             ReadPreference readPref, DBDecoder decoder, DBEncoder encoder) {
+//
+//        if (ref == null) {
+//            ref = new BasicDBObject();
+//        }
+//
+//        if (willTrace()) {
+//            trace("find: " + namespace + " " + JSON.serialize(ref));
+//        }
+//
+//        OutMessage query = OutMessage.query(this, options, numToSkip, chooseBatchSize(batchSize, limit, 0), ref, fields, readPref, encoder);
+//
+//        Response res = db.getConnector().call(_db, this, query, null, 2, readPref, decoder);
+//
+//        return new QueryResultIterator(db, this, res, batchSize, limit, options, decoder);
+//    }
+//
+//    public Cursor aggregate(final List<DBObject> pipeline, final AggregationOptions options,
+//                            final ReadPreference readPreference) {
+//
+//        if(options == null) {
+//            throw new IllegalArgumentException("options can not be null");
+//        }
+//        DBObject last = pipeline.get(pipeline.size() - 1);
+//
+//        DBObject command = prepareCommand(pipeline, options);
+//
+//        final CommandResult res = _db.command(command, getOptions(), readPreference);
+//        res.throwOnError();
+//
+//        String outCollection = (String) last.get("$out");
+//        if (outCollection != null) {
+//            DBCollection collection = _db.getCollection(outCollection);
+//            return new DBCursor(collection, new BasicDBObject(), null, ReadPreference.primary());
+//        } else {
+//            Integer batchSize = options.getBatchSize();
+//            return new QueryResultIterator(res, db, this, batchSize == null ? 0 : batchSize, getDecoder(), res.getServerUsed());
+//        }
+//    }
+//
+//    @Override
+//    @SuppressWarnings("unchecked")
+//    public List<Cursor> parallelScan(final ParallelScanOptions options) {
+//        CommandResult res = _db.command(new BasicDBObject("parallelCollectionScan", getName())
+//                        .append("numCursors", options.getNumCursors()),
+//                options.getReadPreference());
+//        res.throwOnError();
+//
+//        List<Cursor> cursors = new ArrayList<Cursor>();
+//        for (DBObject cursorDocument : (List<DBObject>) res.get("cursors")) {
+//            cursors.add(new QueryResultIterator(cursorDocument, db, this, options.getBatchSize(), getDecoder(), res.getServerUsed()));
+//        }
+//
+//        return cursors;
+//    }
+//
+//
+//    @Override
+//    BulkWriteResult executeBulkWriteOperation(final boolean ordered, final List<WriteRequest> writeRequests,
+//                                              final WriteConcern writeConcern, DBEncoder encoder) {
+//        isTrue("no operations", !writeRequests.isEmpty());
+//
+//        if (writeConcern == null) {
+//            throw new IllegalArgumentException("Write concern can not be null");
+//        }
+//
+//        if (encoder == null) {
+//            encoder = DefaultDBEncoder.FACTORY.create();
+//        }
+//
+//        DBPort port = db.getConnector().getPrimaryPort();
+//        try {
+//            BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(port.getAddress(), writeConcern);
+//            for (Run run : getRunGenerator(ordered, writeRequests, writeConcern, encoder, port)) {
+//                try {
+//                    BulkWriteResult result = run.execute(port);
+//                    if (result.isAcknowledged()) {
+//                        bulkWriteBatchCombiner.addResult(result, run.indexMap);
+//                    }
+//                } catch (BulkWriteException e) {
+//                    bulkWriteBatchCombiner.addErrorResult(e, run.indexMap);
+//                    if (bulkWriteBatchCombiner.shouldStopSendingMoreBatches()) {
+//                        break;
+//                    }
+//                }
+//            }
+//            return bulkWriteBatchCombiner.getResult();
+//        } finally {
+//            db.getConnector().releasePort(port);
+//        }
+//    }
+//
+//    public WriteResult insert(List<DBObject> list, WriteConcern concern, DBEncoder encoder ){
+//        return insert(list, true, concern, encoder);
+//    }
+//
+//    protected WriteResult insert(List<DBObject> list, boolean shouldApply , WriteConcern concern, DBEncoder encoder ){
+//        if (concern == null) {
+//            throw new IllegalArgumentException("Write concern can not be null");
+//        }
+//
+//        if (encoder == null)
+//            encoder = DefaultDBEncoder.FACTORY.create();
+//
+//        if ( willTrace() ) {
+//            for (DBObject o : list) {
+//                trace("save:  " + namespace + " " + JSON.serialize(o));
+//            }
+//        }
+//
+//        DBPort port = db.getConnector().getPrimaryPort();
+//        try {
+//            if (useWriteCommands(concern, port)) {
+//                try {
+//                    return translateBulkWriteResult(insertWithCommandProtocol(list, concern, encoder, port, shouldApply), INSERT, concern,
+//                            port.getAddress());
+//                } catch (BulkWriteException e) {
+//                    throw translateBulkWriteException(e, INSERT);
+//                }
+//            }
+//            else {
+//                return insertWithWriteProtocol(list, concern, encoder, port, shouldApply);
+//            }
+//        } finally {
+//            db.getConnector().releasePort(port);
+//        }
+//    }
+//
+//    public WriteResult remove( DBObject query, WriteConcern concern, DBEncoder encoder ) {
+//        return remove(query, true, concern, encoder);
+//    }
+//
+//    public WriteResult remove( DBObject query, boolean multi, WriteConcern concern, DBEncoder encoder ){
+//        if (concern == null) {
+//            throw new IllegalArgumentException("Write concern can not be null");
+//        }
+//
+//        if (encoder == null) {
+//            encoder = DefaultDBEncoder.FACTORY.create();
+//        }
+//
+//        if (willTrace()) {
+//            trace("remove: " + namespace + " " + JSON.serialize(query));
+//        }
+//
+//        DBPort port = db.getConnector().getPrimaryPort();
+//        try {
+//            if (useWriteCommands(concern, port)) {
+//                try {
+//                    return translateBulkWriteResult(removeWithCommandProtocol(Arrays.asList(new RemoveRequest(query, multi)),
+//                            concern,
+//                            encoder,
+//                            port), REMOVE, concern, port.getAddress());
+//                } catch (BulkWriteException e) {
+//                    throw translateBulkWriteException(e, REMOVE);
+//                }
+//            }
+//            else {
+//                return db.getConnector().say(_db, OutMessage.remove(this, encoder, query, multi), concern, port);
+//            }
+//        } finally {
+//            db.getConnector().releasePort(port);
+//        }
+//    }
+//
+//    @Override
+//    public WriteResult update( DBObject query , DBObject o , boolean upsert , boolean multi , WriteConcern concern,
+//                               DBEncoder encoder ) {
+//
+//        if (o == null) {
+//            throw new IllegalArgumentException("update can not be null");
+//        }
+//
+//        if (concern == null) {
+//            throw new IllegalArgumentException("Write concern can not be null");
+//        }
+//
+//        if (encoder == null)
+//            encoder = DefaultDBEncoder.FACTORY.create();
+//
+//        if (!o.keySet().isEmpty()) {
+//            // if 1st key doesn't start with $, then object will be inserted as is, need to check it
+//            String key = o.keySet().iterator().next();
+//            if (!key.startsWith("$"))
+//                _checkObject(o, false, false);
+//        }
+//
+//        if ( willTrace() ) {
+//            trace("update: " + namespace + " " + JSON.serialize(query) + " " + JSON.serialize(o));
+//        }
+//
+//        DBPort port = db.getConnector().getPrimaryPort();
+//        try {
+//            if (useWriteCommands(concern, port)) {
+//                try {
+//                    BulkWriteResult bulkWriteResult =
+//                            updateWithCommandProtocol(Arrays.<ModifyRequest>asList(new UpdateRequest(query, upsert, o, multi)),
+//                                    concern, encoder, port);
+//                    return translateBulkWriteResult(bulkWriteResult, UPDATE, concern, port.getAddress());
+//                } catch (BulkWriteException e) {
+//                    throw translateBulkWriteException(e, UPDATE);
+//                }
+//            } else {
+//                return db.getConnector().say(_db, OutMessage.update(this, encoder, upsert, multi, query, o), concern, port);
+//            }
+//        } finally {
+//            db.getConnector().releasePort(port);
+//        }
+//    }
+//
+//    @Override
+//    public void drop(){
+//        db._collections.remove(getName());
+//        super.drop();
+//    }
+//
+//    public void doapply( DBObject o ){
+//    }
+//
+//    private WriteResult translateBulkWriteResult(final BulkWriteResult bulkWriteResult, final WriteRequest.Type type,
+//                                                 final WriteConcern writeConcern, final ServerAddress serverAddress) {
+//        CommandResult commandResult = new CommandResult(serverAddress);
+//        addBulkWriteResultToCommandResult(bulkWriteResult, type, commandResult);
+//        return new WriteResult(commandResult, writeConcern);
+//    }
+//
+//    private MongoException translateBulkWriteException(final BulkWriteException e, final WriteRequest.Type type) {
+//        BulkWriteError lastError = e.getWriteErrors().isEmpty() ? null : e.getWriteErrors().get(e.getWriteErrors().size() - 1);
+//        CommandResult commandResult = new CommandResult(e.getServerAddress());
+//        addBulkWriteResultToCommandResult(e.getWriteResult(), type, commandResult);
+//        if (e.getWriteConcernError() != null) {
+//            commandResult.putAll(e.getWriteConcernError().getDetails());
+//        }
+//
+//        if (lastError != null) {
+//            commandResult.put("err", lastError.getMessage());
+//            commandResult.put("code", lastError.getCode());
+//            commandResult.putAll(lastError.getDetails());
+//        } else if (e.getWriteConcernError() != null) {
+//            commandResult.put("err", e.getWriteConcernError().getMessage());
+//            commandResult.put("code", e.getWriteConcernError().getCode());
+//        }
+//        return commandResult.getException();
+//    }
+//
+//    private void addBulkWriteResultToCommandResult(final BulkWriteResult bulkWriteResult, final WriteRequest.Type type,
+//                                                   final CommandResult commandResult) {
+//        commandResult.put("ok", 1);
+//        if (type == INSERT) {
+//            commandResult.put("n", 0);
+//        } else if (type == REMOVE) {
+//            commandResult.put("n", bulkWriteResult.getRemovedCount());
+//        } else if (type == UPDATE || type == REPLACE) {
+//            commandResult.put("n", bulkWriteResult.getMatchedCount() + bulkWriteResult.getUpserts().size());
+//            if (bulkWriteResult.getUpserts().isEmpty()) {
+//                commandResult.put("updatedExisting", true);
+//            } else {
+//                commandResult.put("updatedExisting", false);
+//                commandResult.put("upserted", bulkWriteResult.getUpserts().get(0).getId());
+//            }
+//        }
+//    }
+//
+//    public void createIndex(final DBObject keys, final DBObject options, DBEncoder encoder) {
+//        DBTCPConnector connector = db.getConnector();
+//        DBPort port = db.getConnector().getPrimaryPort();
+//
+//        try {
+//            DBObject index = defaultOptions(keys);
+//            index.putAll(options);
+//            index.put("key", keys);
+//
+//            if (connector.getServerDescription(port.getAddress()).getVersion().compareTo(new ServerVersion(2, 6)) >= 0) {
+//                BasicDBObject createIndexes = new BasicDBObject("createIndexes", getName());
+//
+//                BasicDBList list = new BasicDBList();
+//                list.add(index);
+//                createIndexes.put("indexes", list);
+//
+//                CommandResult commandResult = port.runCommand(db, createIndexes);
+//                try {
+//                    commandResult.throwOnError();
+//                } catch (CommandFailureException e) {
+//                    if(e.getCode() == 11000) {
+//                        throw new MongoException.DuplicateKey(commandResult);
+//                    } else {
+//                        throw e;
+//                    }
+//                }
+//            } else {
+//                db.doGetCollection("system.indexes").insertWithWriteProtocol(asList(index), WriteConcern.SAFE,
+//                        DefaultDBEncoder.FACTORY.create(), port, false);
+//            }
+//        } catch (IOException e) {
+//            throw new MongoException.Network("Operation on server " + port.getAddress() + " failed", e);
+//        } finally {
+//            connector.releasePort(port);
+//        }
+//    }
+//
+//    private BulkWriteResult insertWithCommandProtocol(final List<DBObject> list, final WriteConcern writeConcern,
+//                                                      final DBEncoder encoder,
+//                                                      final DBPort port, final boolean shouldApply) {
+//        if ( shouldApply ){
+//            applyRulesForInsert(list);
+//        }
+//
+//        BaseWriteCommandMessage message = new InsertCommandMessage(getNamespace(), writeConcern, list,
+//                DefaultDBEncoder.FACTORY.create(), encoder,
+//                getMessageSettings(port));
+//        return writeWithCommandProtocol(port, INSERT, message, writeConcern);
+//    }
+//
+//    private void applyRulesForInsert(final List<DBObject> list) {
+//        for (DBObject o : list) {
+//            _checkObject(o, false, false);
+//            apply(o);
+//            Object id = o.get("_id");
+//            if (id instanceof ObjectId) {
+//                ((ObjectId) id).notNew();
+//            }
+//        }
+//    }
+//
+//    private BulkWriteResult removeWithCommandProtocol(final List<RemoveRequest> removeList,
+//                                                      final WriteConcern writeConcern,
+//                                                      final DBEncoder encoder, final DBPort port) {
+//        BaseWriteCommandMessage message = new DeleteCommandMessage(getNamespace(), writeConcern, removeList,
+//                DefaultDBEncoder.FACTORY.create(), encoder,
+//                getMessageSettings(port));
+//        return writeWithCommandProtocol(port, REMOVE, message, writeConcern);
+//    }
+//
+//    @SuppressWarnings("unchecked")
+//    private BulkWriteResult updateWithCommandProtocol(final List<ModifyRequest> updates,
+//                                                      final WriteConcern writeConcern,
+//                                                      final DBEncoder encoder, final DBPort port) {
+//        BaseWriteCommandMessage message = new UpdateCommandMessage(getNamespace(), writeConcern, updates,
+//                DefaultDBEncoder.FACTORY.create(), encoder,
+//                getMessageSettings(port));
+//        return writeWithCommandProtocol(port, UPDATE, message, writeConcern);
+//    }
+//
+//    private BulkWriteResult writeWithCommandProtocol(final DBPort port, final WriteRequest.Type type, BaseWriteCommandMessage message,
+//                                                     final WriteConcern writeConcern) {
+//        int batchNum = 0;
+//        int currentRangeStartIndex = 0;
+//        BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(port.getAddress(), writeConcern);
+//        do {
+//            batchNum++;
+//            BaseWriteCommandMessage nextMessage = sendWriteCommandMessage(message, batchNum, port);
+//            int itemCount = nextMessage != null ? message.getItemCount() - nextMessage.getItemCount() : message.getItemCount();
+//            IndexMap indexMap = IndexMap.create(currentRangeStartIndex, itemCount);
+//            CommandResult commandResult = receiveWriteCommandMessage(port);
+//            if (willTrace() && nextMessage != null || batchNum > 1) {
+//                getLogger().fine(format("Received response for batch %d", batchNum));
+//            }
+//
+//            if (hasError(commandResult)) {
+//                bulkWriteBatchCombiner.addErrorResult(getBulkWriteException(type, commandResult), indexMap);
+//            } else {
+//                bulkWriteBatchCombiner.addResult(getBulkWriteResult(type, commandResult), indexMap);
+//            }
+//            currentRangeStartIndex += itemCount;
+//            message = nextMessage;
+//        } while (message != null && !bulkWriteBatchCombiner.shouldStopSendingMoreBatches());
+//
+//        return bulkWriteBatchCombiner.getResult();
+//    }
+//
+//    private boolean useWriteCommands(final WriteConcern concern, final DBPort port) {
+//        return concern.callGetLastError() &&
+//                db.getConnector().getServerDescription(port.getAddress()).getVersion().compareTo(new ServerVersion(2, 6)) >= 0;
+//    }
+//
+//    private MessageSettings getMessageSettings(final DBPort port) {
+//        ServerDescription serverDescription = db.getConnector().getServerDescription(port.getAddress());
+//        return MessageSettings.builder()
+//                .maxDocumentSize(serverDescription.getMaxDocumentSize())
+//                .maxMessageSize(serverDescription.getMaxMessageSize())
+//                .maxWriteBatchSize(serverDescription.getMaxWriteBatchSize())
+//                .build();
+//    }
+//
+//    private int getMaxWriteBatchSize(final DBPort port) {
+//        return db.getConnector().getServerDescription(port.getAddress()).getMaxWriteBatchSize();
+//    }
+//
+//    private MongoNamespace getNamespace() {
+//        return new MongoNamespace(getDB().getName(), getName());
+//    }
+//
+//    private BaseWriteCommandMessage sendWriteCommandMessage(final BaseWriteCommandMessage message, final int batchNum,
+//                                                            final DBPort port) {
+//        final PoolOutputBuffer buffer = new PoolOutputBuffer();
+//        try {
+//            BaseWriteCommandMessage nextMessage = message.encode(buffer);
+//            if (nextMessage != null || batchNum > 1) {
+//                getLogger().fine(format("Sending batch %d", batchNum));
+//            }
+//            db.getConnector().doOperation(getDB(), port, new DBPort.Operation<Void>() {
+//                @Override
+//                public Void execute() throws IOException {
+//                    buffer.pipe(port.getOutputStream());
+//                    return null;
+//                }
+//            });
+//            return nextMessage;
+//        } finally {
+//            buffer.reset();
+//        }
+//    }
+//
+//    private CommandResult receiveWriteCommandMessage(final DBPort port) {
+//        return db.getConnector().doOperation(getDB(), port, new DBPort.Operation<CommandResult>() {
+//            @Override
+//            public CommandResult execute() throws IOException {
+//                Response response = new Response(port.getAddress(), null, port.getInputStream(),
+//                        DefaultDBDecoder.FACTORY.create());
+//                CommandResult writeCommandResult = new CommandResult(port.getAddress());
+//                writeCommandResult.putAll(response.get(0));
+//                writeCommandResult.throwOnError();
+//                return writeCommandResult;
+//            }
+//        });
+//    }
+//
+//
+//    private WriteResult insertWithWriteProtocol(final List<DBObject> list, final WriteConcern concern, final DBEncoder encoder,
+//                                                final DBPort port, final boolean shouldApply) {
+//        if ( shouldApply ){
+//            applyRulesForInsert(list);
+//        }
+//
+//        WriteResult last = null;
+//
+//        int cur = 0;
+//        int maxsize = db._mongo.getMaxBsonObjectSize();
+//        while ( cur < list.size() ) {
+//
+//            OutMessage om = OutMessage.insert( this , encoder, concern );
+//
+//            for ( ; cur < list.size(); cur++ ){
+//                DBObject o = list.get(cur);
+//                om.putObject( o );
+//
+//                // limit for batch insert is 4 x maxbson on server, use 2 x to be safe
+//                if ( om.size() > 2 * maxsize ){
+//                    cur++;
+//                    break;
+//                }
+//            }
+//
+//            last = db.getConnector().say(_db, om, concern, port);
+//        }
+//
+//        return last;
+//    }
+//
+//    private Iterable<Run> getRunGenerator(final boolean ordered, final List<WriteRequest> writeRequests,
+//                                          final WriteConcern writeConcern, final DBEncoder encoder, final DBPort port) {
+//        if (ordered) {
+//            return new OrderedRunGenerator(writeRequests, writeConcern, encoder, port);
+//        } else {
+//            return new UnorderedRunGenerator(writeRequests, writeConcern, encoder, port);
+//        }
+//    }
+//
+//    private static final Logger TRACE_LOGGER = Logger.getLogger( "com.mongodb.TRACE" );
+//    private static final Level TRACE_LEVEL = Boolean.getBoolean( "DB.TRACE" ) ? Level.INFO : Level.FINEST;
+//
+//    private boolean willTrace(){
+//        return TRACE_LOGGER.isLoggable(TRACE_LEVEL);
+//    }
+//
+//    private void trace( String s ){
+//        TRACE_LOGGER.log( TRACE_LEVEL , s );
+//    }
+//
+//    private Logger getLogger() {
+//        return TRACE_LOGGER;
+//    }
+//
+//    private class OrderedRunGenerator implements Iterable<Run> {
+//        private final List<WriteRequest> writeRequests;
+//        private final WriteConcern writeConcern;
+//        private final DBEncoder encoder;
+//        private final int maxBatchWriteSize;
+//
+//        public OrderedRunGenerator(final List<WriteRequest> writeRequests, final WriteConcern writeConcern, final DBEncoder encoder,
+//                                   final DBPort port) {
+//            this.writeRequests = writeRequests;
+//            this.writeConcern = writeConcern.continueOnError(false);
+//            this.encoder = encoder;
+//            this.maxBatchWriteSize = getMaxWriteBatchSize(port);
+//        }
+//
+//        @Override
+//        public Iterator<Run> iterator() {
+//            return new Iterator<Run>() {
+//                private int curIndex;
+//
+//                @Override
+//                public boolean hasNext() {
+//                    return curIndex < writeRequests.size();
+//                }
+//
+//                @Override
+//                public Run next() {
+//                    Run run = new Run(writeRequests.get(curIndex).getType(), writeConcern, encoder);
+//                    int startIndexOfNextRun = getStartIndexOfNextRun();
+//                    for (int i = curIndex; i < startIndexOfNextRun; i++) {
+//                        run.add(writeRequests.get(i), i);
+//                    }
+//                    curIndex = startIndexOfNextRun;
+//                    return run;
+//                }
+//
+//                private int getStartIndexOfNextRun() {
+//                    WriteRequest.Type type = writeRequests.get(curIndex).getType();
+//                    for (int i = curIndex; i < writeRequests.size(); i++) {
+//                        if (i == curIndex + maxBatchWriteSize || writeRequests.get(i).getType() != type) {
+//                            return i;
+//                        }
+//                    }
+//                    return writeRequests.size();
+//                }
+//
+//                @Override
+//                public void remove() {
+//                    throw new UnsupportedOperationException("Not implemented");
+//                }
+//            };
+//        }
+//    }
+//
+//
+//    private class UnorderedRunGenerator implements Iterable<Run> {
+//        private final List<WriteRequest> writeRequests;
+//        private final WriteConcern writeConcern;
+//        private final DBEncoder encoder;
+//        private final int maxBatchWriteSize;
+//
+//        public UnorderedRunGenerator(final List<WriteRequest> writeRequests, final WriteConcern writeConcern,
+//                                     final DBEncoder encoder, final DBPort port) {
+//            this.writeRequests = writeRequests;
+//            this.writeConcern = writeConcern.continueOnError(true);
+//            this.encoder = encoder;
+//            this.maxBatchWriteSize = getMaxWriteBatchSize(port);
+//        }
+//
+//        @Override
+//        public Iterator<Run> iterator() {
+//            return new Iterator<Run>() {
+//                private final Map<WriteRequest.Type, Run> runs =
+//                        new TreeMap<WriteRequest.Type, Run>(new Comparator<WriteRequest.Type>() {
+//                            @Override
+//                            public int compare(final WriteRequest.Type first, final WriteRequest.Type second) {
+//                                return first.compareTo(second);
+//                            }
+//                        });
+//                private int curIndex;
+//
+//                @Override
+//                public boolean hasNext() {
+//                    return curIndex < writeRequests.size() || !runs.isEmpty();
+//                }
+//
+//                @Override
+//                public Run next() {
+//                    while (curIndex < writeRequests.size()) {
+//                        WriteRequest writeRequest = writeRequests.get(curIndex);
+//                        Run run = runs.get(writeRequest.getType());
+//                        if (run == null) {
+//                            run = new Run(writeRequest.getType(), writeConcern, encoder);
+//                            runs.put(run.type, run);
+//                        }
+//                        run.add(writeRequest, curIndex);
+//                        curIndex++;
+//                        if (run.size() == maxBatchWriteSize) {
+//                            return runs.remove(run.type);
+//                        }
+//                    }
+//
+//                    return runs.remove(runs.keySet().iterator().next());
+//                }
+//
+//                @Override
+//                public void remove() {
+//                    throw new UnsupportedOperationException("Not implemented");
+//                }
+//            };
+//        }
+//    }
+//
+//    private class Run {
+//        private final List<WriteRequest> writeRequests = new ArrayList<WriteRequest>();
+//        private final WriteRequest.Type type;
+//        private final WriteConcern writeConcern;
+//        private final DBEncoder encoder;
+//        private IndexMap indexMap;
+//
+//        Run(final WriteRequest.Type type, final WriteConcern writeConcern, final DBEncoder encoder) {
+//            this.type = type;
+//            this.indexMap = IndexMap.create();
+//            this.writeConcern = writeConcern;
+//            this.encoder = encoder;
+//        }
+//
+//        @SuppressWarnings("unchecked")
+//        void add(final WriteRequest writeRequest, final int originalIndex) {
+//            indexMap = indexMap.add(writeRequests.size(), originalIndex);
+//            writeRequests.add(writeRequest);
+//        }
+//
+//        public int size() {
+//            return writeRequests.size();
+//        }
+//
+//        @SuppressWarnings("unchecked")
+//        BulkWriteResult execute(final DBPort port) {
+//            if (type == UPDATE) {
+//                return executeUpdates(getWriteRequestsAsModifyRequests(), port);
+//            } else if (type == REPLACE) {
+//                return executeReplaces(getWriteRequestsAsModifyRequests(), port);
+//            } else if (type == INSERT) {
+//                return executeInserts(getWriteRequestsAsInsertRequests(), port);
+//            } else if (type == REMOVE) {
+//                return executeRemoves(getWriteRequestsAsRemoveRequests(), port);
+//            } else {
+//                throw new MongoInternalException(format("Unsupported write of type %s", type));
+//            }
+//        }
+//
+//        private List getWriteRequestsAsRaw() {
+//            return writeRequests;
+//        }
+//
+//        @SuppressWarnings("unchecked")
+//        private List<RemoveRequest> getWriteRequestsAsRemoveRequests() {
+//            return (List<RemoveRequest>) getWriteRequestsAsRaw();
+//        }
+//
+//        @SuppressWarnings("unchecked")
+//        private List<InsertRequest> getWriteRequestsAsInsertRequests() {
+//            return (List<InsertRequest>) getWriteRequestsAsRaw();
+//        }
+//
+//        @SuppressWarnings("unchecked")
+//        private List<ModifyRequest> getWriteRequestsAsModifyRequests() {
+//            return (List<ModifyRequest>) getWriteRequestsAsRaw();
+//        }
+//
+//        BulkWriteResult executeUpdates(final List<ModifyRequest> updateRequests, final DBPort port) {
+//            for (ModifyRequest request : updateRequests) {
+//                for (String key : request.getUpdateDocument().keySet()) {
+//                    if (!key.startsWith("$")) {
+//                        throw new IllegalArgumentException("Update document keys must start with $: " + key);
+//                    }
+//                }
+//            }
+//
+//            return new RunExecutor(port) {
+//                @Override
+//                BulkWriteResult executeWriteCommandProtocol() {
+//                    return updateWithCommandProtocol(updateRequests, writeConcern, encoder, port);
+//                }
+//
+//                @Override
+//                WriteResult executeWriteProtocol(final int i) {
+//                    ModifyRequest update = updateRequests.get(i);
+//                    return update(update.getQuery(), update.getUpdateDocument(), update.isUpsert(), update.isMulti(), writeConcern,
+//                            encoder);
+//                }
+//
+//                @Override
+//                WriteRequest.Type getType() {
+//                    return UPDATE;
+//                }
+//            }.execute();
+//        }
+//
+//        BulkWriteResult executeReplaces(final List<ModifyRequest> replaceRequests, final DBPort port) {
+//            for (ModifyRequest request : replaceRequests) {
+//                _checkObject(request.getUpdateDocument(), false, false);
+//            }
+//
+//            return new RunExecutor(port) {
+//                @Override
+//                BulkWriteResult executeWriteCommandProtocol() {
+//                    return updateWithCommandProtocol(replaceRequests, writeConcern, encoder, port);
+//                }
+//
+//                @Override
+//                WriteResult executeWriteProtocol(final int i) {
+//                    ModifyRequest update = replaceRequests.get(i);
+//                    return update(update.getQuery(), update.getUpdateDocument(), update.isUpsert(), update.isMulti(), writeConcern,
+//                            encoder);
+//                }
+//
+//                @Override
+//                WriteRequest.Type getType() {
+//                    return REPLACE;
+//                }
+//            }.execute();
+//        }
+//
+//        BulkWriteResult executeRemoves(final List<RemoveRequest> removeRequests, final DBPort port) {
+//            return new RunExecutor(port) {
+//                @Override
+//                BulkWriteResult executeWriteCommandProtocol() {
+//                    return removeWithCommandProtocol(removeRequests, writeConcern, encoder, port);
+//                }
+//
+//                @Override
+//                WriteResult executeWriteProtocol(final int i) {
+//                    RemoveRequest removeRequest = removeRequests.get(i);
+//                    return remove(removeRequest.getQuery(), removeRequest.isMulti(), writeConcern, encoder);
+//                }
+//
+//                @Override
+//                WriteRequest.Type getType() {
+//                    return REMOVE;
+//                }
+//            }.execute();
+//        }
+//
+//        BulkWriteResult executeInserts(final List<InsertRequest> insertRequests, final DBPort port) {
+//            return new RunExecutor(port) {
+//                @Override
+//                BulkWriteResult executeWriteCommandProtocol() {
+//                    List<DBObject> documents = new ArrayList<DBObject>(insertRequests.size());
+//                    for (InsertRequest cur : insertRequests) {
+//                        documents.add(cur.getDocument());
+//                    }
+//                    return insertWithCommandProtocol(documents, writeConcern, encoder, port, true);
+//                }
+//
+//                @Override
+//                WriteResult executeWriteProtocol(final int i) {
+//                    return insert(asList(insertRequests.get(i).getDocument()), writeConcern, encoder);
+//                }
+//
+//                @Override
+//                WriteRequest.Type getType() {
+//                    return INSERT;
+//                }
+//
+//            }.execute();
+//        }
+//
+//
+//        private abstract class RunExecutor {
+//            private final DBPort port;
+//
+//            RunExecutor(final DBPort port) {
+//                this.port = port;
+//            }
+//
+//            abstract BulkWriteResult executeWriteCommandProtocol();
+//
+//            abstract WriteResult executeWriteProtocol(final int i);
+//
+//            abstract WriteRequest.Type getType();
+//
+//            BulkWriteResult getResult(final WriteResult writeResult) {
+//                int count = getCount(writeResult);
+//                List<BulkWriteUpsert> upsertedItems = getUpsertedItems(writeResult);
+//                Integer modifiedCount = (getType() == UPDATE || getType() == REPLACE) ? null : 0;
+//                return new AcknowledgedBulkWriteResult(getType(), count - upsertedItems.size(), modifiedCount, upsertedItems);
+//            }
+//
+//            BulkWriteResult execute() {
+//                if (useWriteCommands(writeConcern, port)) {
+//                    return executeWriteCommandProtocol();
+//                } else {
+//                    return executeWriteProtocol();
+//                }
+//            }
+//
+//            private BulkWriteResult executeWriteProtocol() {
+//                BulkWriteBatchCombiner bulkWriteBatchCombiner = new BulkWriteBatchCombiner(port.getAddress(), writeConcern);
+//                for (int i = 0; i < writeRequests.size(); i++) {
+//                    IndexMap indexMap = IndexMap.create(i, 1);
+//                    try {
+//                        WriteResult writeResult = executeWriteProtocol(i);
+//                        if (writeConcern.callGetLastError()) {
+//                            bulkWriteBatchCombiner.addResult(getResult(writeResult), indexMap);
+//                            // When a journaled write is requested but journaling is disabled, it's not thrown as an exception.
+//                            if (isWriteConcernError(writeResult.getLastError()))  {
+//                                bulkWriteBatchCombiner.addWriteConcernErrorResult(getWriteConcernError(writeResult.getLastError()));
+//                            }
+//                        }
+//                    } catch (WriteConcernException writeException) {
+//                        if (isWriteConcernError(writeException.getCommandResult()))  {
+//                            bulkWriteBatchCombiner.addResult(getResult(new WriteResult(writeException.getCommandResult(), writeConcern)),
+//                                    indexMap);
+//                            bulkWriteBatchCombiner.addWriteConcernErrorResult(getWriteConcernError(writeException.getCommandResult()));
+//                        } else {
+//                            bulkWriteBatchCombiner.addWriteErrorResult(getBulkWriteError(writeException), indexMap);
+//                        }
+//                        if (bulkWriteBatchCombiner.shouldStopSendingMoreBatches()) {
+//                            break;
+//                        }
+//                    }
+//                }
+//                return bulkWriteBatchCombiner.getResult();
+//            }
+//
+//
+//            private int getCount(final WriteResult writeResult) {
+//                return getType() == INSERT ? 1 : writeResult.getN();
+//            }
+//
+//            List<BulkWriteUpsert> getUpsertedItems(final WriteResult writeResult) {
+//                return writeResult.getUpsertedId() == null
+//                        ? Collections.<BulkWriteUpsert>emptyList()
+//                        : asList(new BulkWriteUpsert(0, writeResult.getUpsertedId()));
+//            }
+//
+//            private BulkWriteError getBulkWriteError(final WriteConcernException writeException) {
+//                return new BulkWriteError(writeException.getCode(),
+//                        writeException.getCommandResult().getString("err"),
+//                        getErrorResponseDetails(writeException.getCommandResult()),
+//                        0);
+//            }
+//
+//            // Accommodating GLE representation of write concern errors
+//            private boolean isWriteConcernError(final CommandResult commandResult) {
+//                return commandResult.get("wtimeout") != null || commandResult.get("wnote") != null || commandResult.get("jnote") != null;
+//            }
+//
+//            private WriteConcernError getWriteConcernError(final CommandResult commandResult) {
+//                return new WriteConcernError(commandResult.getCode(), getWriteConcernErrorMessage(commandResult),
+//                        getErrorResponseDetails(commandResult));
+//            }
+//
+//            // GLE uses jnote and wnote as alternative ways or reporting write concern errors
+//            private String getWriteConcernErrorMessage(final CommandResult commandResult) {
+//                String errorMessage = commandResult.getString("jnote");
+//                if (errorMessage == null) {
+//                    errorMessage = commandResult.getString("wnote");
+//                }
+//                if (errorMessage == null) {
+//                    errorMessage = commandResult.getString("err");
+//                }
+//                return errorMessage;
+//            }
+//
+//            private DBObject getErrorResponseDetails(final DBObject response) {
+//                DBObject details = new BasicDBObject();
+//                for (String key : response.keySet()) {
+//                    if (!asList("ok", "err", "code").contains(key)) {
+//                        details.put(key, response.get(key));
+//                    }
+//                }
+//                return details;
+//            }
+//        }
+//    }
+//}

@@ -36,81 +36,15 @@ public class BrowseController {
         this.userContext = userContext;
     }
 
-    private static boolean flipFlop = false;       // to flipFlop thru 2 different CAPCO levels in method flipFlop()
 
-    @RequestMapping(value="/flipFlop", method = RequestMethod.GET)
-    public ModelAndView flipFlop(Map<String, Object> model) {
-
-        // new security repo in mongo will feed the user perhaps in a Spring User object,
-        // this flipFlop is here to show a demo of 2 different CAPCO security settings in an
-        // easy manner... just refresh the browser and we toggle the security setting
-        flipFlop = !flipFlop;
-        CapcoUser capcoUser = null;
-
-        if (flipFlop) {
-            capcoUser = CapcoUser.TestCapcoUsers.TS_USER;
-        } else {
-            // just for testing now use U
-            capcoUser = CapcoUser.TestCapcoUsers.UNCLASS_USER;
-        }
-
-        String capcoVisibilityString = capcoUser.getUserSecurityAttributes().getCapcoUserString();
-        personRepository.setCapcoVisibilityString(capcoVisibilityString);
-
-        Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
-
-        //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));
-
-        //Iterable<Person> persons = personRepository.findAll();
-
-        ModelAndView mav = new ModelAndView();
-        mav.setViewName("browse");
-        mav.addObject("persons", persons);
-        mav.addObject("currentUser", capcoUser);
-        return mav;
-    }
 
 
     /**
-     * find all Person with lastName of "Best"
+     * find all Person records that are visible to your SecurityAttributes
      *
      * @param model
      * @return
      */
-    @RequestMapping(value="/best", method = RequestMethod.GET)
-    public ModelAndView best(Map<String, Object> model) {
-
-        // new security repo in mongo will feed the user perhaps in a Spring User object,
-        // this flipFlop is here to show a demo of 2 different CAPCO security settings in an
-        // easy manner... just refresh the browser and we toggle the security setting
-        flipFlop = !flipFlop;
-        CapcoUser capcoUser = null;
-
-        if (flipFlop) {
-            capcoUser = CapcoUser.TestCapcoUsers.TS_USER;
-        } else {
-            // just for testing now use U
-            capcoUser = CapcoUser.TestCapcoUsers.UNCLASS_USER;
-        }
-
-        String capcoVisibilityString = capcoUser.getUserSecurityAttributes().getCapcoUserString();
-        personRepository.setCapcoVisibilityString(capcoVisibilityString);
-
-        BasicDBObject criteria = new BasicDBObject("lastName", "Best");
-
-        Iterable<Person> persons = personRepository.findPersons(criteria, new PageRequest(1, 100));
-
-        //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));
-
-        //Iterable<Person> persons = personRepository.findAll();
-
-        ModelAndView mav = new ModelAndView();
-        mav.setViewName("browse");
-        mav.addObject("persons", persons);
-        mav.addObject("currentUser", capcoUser);
-        return mav;
-    }
-
     @RequestMapping(value="/browse", method = RequestMethod.GET)
     public ModelAndView browse(Map<String, Object> model) {
 
@@ -118,12 +52,18 @@ public class BrowseController {
         String capcoVisibilityString = currentUser.getUserSecurityAttributes().getCapcoUserString();
         personRepository.setCapcoVisibilityString(capcoVisibilityString); // TODO: later on the findPersons will fetch
 
-        Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
-        
-        //Iterable<Person> persons = personRepository.findAll(new PageRequest(1, 10));
-        
-        //Iterable<Person> persons = personRepository.findAll();
-        
+
+        ////
+        // You can specify a criteria to filter results by defining something like:
+        //  BasicDBObject criteria = new BasicDBObject("lastName", "Best");
+        // You can specify a criteria of null to find all documents
+        BasicDBObject criteria = null;
+        ////
+
+        Iterable<Person> persons = personRepository.findPersons(criteria, new PageRequest(1, 100));
+
+
+        // display results
         ModelAndView mav = new ModelAndView();
         mav.setViewName("browse");
         mav.addObject("persons", persons);

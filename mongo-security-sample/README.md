@@ -10,11 +10,8 @@ Our sample implementation will show off the FLAC features.  To see do the follow
 (3) build and run the example java implementation:
 (4) try out the following urls:
     http://localhost:8080/mongo-app/browse              ... will show all Person documents
-    http://localhost:8080/mongo-app/flipFlop            ... each page refresh will toggle between unclass or full read view
-    http://localhost:8080/mongo-app/best                ... shows redaction working with a criteria of { lastName: "Best" }
-
-The first will manage the currentUser who is logged in and show info appropriate for that user.
-The second will flip flop between an UNCLASSIFIED user and one that has many access rights, just REFRESH your browser to see the views that each would see using the system.
+ 
+The url will manage the currentUser who is logged in and show info appropriate for that user.
 
 
 
@@ -31,6 +28,10 @@ again to get the user email.
 And then we take that email and use it to look up the CapcoUser and then their specific CAPCO setting.
 That setting is then used to drive what the user can see.
 
+
+Low level:
+
+We deal with UserSecurityAttributes at the lower levels to manage visibility to documents stored in mongodb.
 
 
 Samples:
