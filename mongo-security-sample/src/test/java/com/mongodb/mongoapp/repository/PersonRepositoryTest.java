@@ -3,6 +3,7 @@ package com.mongodb.mongoapp.repository;
 import java.net.UnknownHostException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import com.mongodb.*;
 import junit.framework.Assert;
@@ -19,7 +20,7 @@ import com.mongodb.mongoapp.domain.Person;
 @RunWith(SpringJUnit4ClassRunner.class)
 @ContextConfiguration("classpath:spring-context.xml")
 public class PersonRepositoryTest {
-    
+
     @Autowired
     PersonRepository personRepository;
 
@@ -34,15 +35,15 @@ public class PersonRepositoryTest {
         p.setFavorites(favorites);
         personRepository.save(p);
         //System.out.println(p);
-        
+
         Person p2 = personRepository.findAll().iterator().next();
         System.out.println(p2);
     }
-    
+
     @Test
     public void testFind() {
-        
-        
+
+
         Person p2 = personRepository.findAll().iterator().next();
         //System.out.println(p2.getFavorites().getSecurityLabel().get(0));
     }
@@ -55,6 +56,8 @@ public class PersonRepositoryTest {
         DB db = mongo.getDB("test");
         DBCollection customersCollection = db.getCollection("ttt$customers");
         customersCollection.drop();
+
+        customersCollection.find();
 
         DBObject address = new BasicDBObject("city", "NYC");
         address.put("street", "Broadway");
@@ -76,6 +79,31 @@ public class PersonRepositoryTest {
         customersCollection.insert(customer);
         //        customersCollection.find(null, null);
         Assert.assertEquals(1, customersCollection.count());
+
+        // customersCollection.find()
+    }
+
+    /**
+     * Get a single document from collection.
+     *
+     * @param criteria    the selection criteria using query operators.
+     * @param fields      specifies which projection MongoDB will return from the documents in the result set.
+     * @return A document that satisfies the query specified as the argument to this method.
+     * @mongodb.driver.manual tutorial/query-documents/ Query
+     * @since 2.12.0
+     */
+    DBObject findOne(DBCollection collection, DBObject criteria, DBObject fields, DBObject orderBy, ReadPreference readPref,
+                     long maxTime, TimeUnit maxTimeUnit) {
+
+       /*       * @param orderBy     A document whose fields specify the attributes on which to sort the result set.
+                * @param readPref    {@code ReadPreference} to be used for this operation
+                * @param maxTime     the maximum time that the server will allow this operation to execute before killing it
+                * @param maxTimeUnit the unit that maxTime is specified in
+        *
+        * Are additional flags that can be specified by the findOne() method.
+        */
+
+        return null;
     }
 
 }

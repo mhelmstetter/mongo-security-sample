@@ -1,26 +1,34 @@
 package com.mongodb.mongoapp.util;
 
+import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-
-import static org.junit.Assert.*;
 
 import static junit.framework.Assert.assertEquals;
 
 public class CapcoVisibilityUtilTest {
 
     @Test
-    public void testConvertJavaToEncodeCapcoVisibility() throws Exception {
+    public void test1() {
 
-        assertEquals("[  ]", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility( new String[] {} ));
-        assertEquals("[  ]", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility( (List<String>)null ));
-        if (CapcoVisibilityUtil.EXPAND_CAPCO_AS_TREE_OF_VISIBILITY) {
-            assertEquals("[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"}));
-
-        } else {
-            assertEquals("[ { c:\"TS\" } ]", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS:fo"}));
-            assertEquals("[ { c:\"TS\" }, { c:\"S\" } ]", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS:fo", "c:S"}));
-        }
+        Assert.assertEquals(null, CapcoVisibilityUtil.recusivelyExpandCapcoVisibility(null));
+        compareListsOrderNotImportant(Arrays.asList("c:C", "c:U"), CapcoVisibilityUtil.recusivelyExpandCapcoVisibility(Arrays.asList("c:C")));
+        compareListsOrderNotImportant(Arrays.asList("c:S", "c:C", "c:U"), CapcoVisibilityUtil.recusivelyExpandCapcoVisibility(Arrays.asList("c:S")));
+        compareListsOrderNotImportant(Arrays.asList("c:S", "c:C", "c:U", "c:TS"), CapcoVisibilityUtil.recusivelyExpandCapcoVisibility(Arrays.asList("c:TS")));
     }
+
+
+    private void compareListsOrderNotImportant(List<String> e, List<String> actual) {
+        Assert.assertEquals(new HashSet(e), new HashSet(actual));
+    }
+
+    private void compareListsOrderNotImportant(String oneElement, List<String> actual) {
+        Assert.assertEquals(new HashSet(Arrays.asList(oneElement)), new HashSet(actual));
+    }
+
 }

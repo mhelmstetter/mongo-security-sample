@@ -4,6 +4,8 @@ import com.mongodb.mongoapp.util.CapcoVisibilityUtil;
 import org.bson.types.ObjectId;
 
 import java.io.Serializable;
+import java.util.Arrays;
+import java.util.List;
 
 /**
  * User that has a Capco User String giving CAPCO rights in the system
@@ -14,42 +16,47 @@ public class CapcoUser  extends PersistedDomainObject implements Serializable {
     private String lastName;
     private String email;
     private String password;
-    private String capcoUserString;
-
+    // the following will encode the capcoUserString:
+    private UserSecurityAttributes userSecurityAttributes;
 
     /** Test (or demo) CapcoUsers gives some sample CapcoUser settings for an UNCLASSIFIED user and one that has TS with a number
      *  of SCI.
      */
     public static class TestCapcoUsers {
-        public final static CapcoUser UNCLASS_USER = new CapcoUser("frank", "UNCLASS_TestAccount", "frank_unclassified@.example.com", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:U"}));
-        public final static CapcoUser TS_USER = new CapcoUser("frank", "TS_TestAccount", "frank_ts@.example.com", CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"}));
+        public final static CapcoUser UNCLASS_USER =
+                new CapcoUser("frank", "UNCLASS_TestAccount", "frank_unclassified@.example.com",
+                        "U", null, null);
+        public final static CapcoUser TS_USER = new CapcoUser("frank", "TS_TestAccount", "frank_ts@.example.com",
+                "TS", Arrays.asList("TK", "SI", "G", "HCS"), null);
+
+
 
     }
 
-    public CapcoUser(ObjectId id, String firstName, String lastName, String email, String password, String capcoUserString) {
+    public CapcoUser(ObjectId id, String firstName, String lastName, String email, String password, String clearance, List<String> sci, List<String> country) {
         this.id = id;
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
-        this.capcoUserString = capcoUserString;
+        this.userSecurityAttributes = new UserSecurityAttributes(clearance, sci, country);
     }
 
 
-    public CapcoUser(String firstName, String lastName, String email, String password, String capcoUserString) {
+    public CapcoUser(String firstName, String lastName, String email, String password, String clearance, List<String> sci, List<String> country) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
         this.password = password;
-        this.capcoUserString = capcoUserString;
+        this.userSecurityAttributes = new UserSecurityAttributes(clearance, sci, country);
     }
 
     /** no password set version */
-    public CapcoUser(String firstName, String lastName, String email, String capcoUserString) {
+    public CapcoUser(String firstName, String lastName, String email, String clearance, List<String> sci, List<String> country) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.email = email;
-        this.capcoUserString = capcoUserString;
+        this.userSecurityAttributes = new UserSecurityAttributes(clearance, sci, country);
     }
 
     public String getFirstName() {
@@ -80,15 +87,8 @@ public class CapcoUser  extends PersistedDomainObject implements Serializable {
 
     public void setPassword(String password) { this.password = password; }
 
-    public String getCapcoUserString() {
-        return capcoUserString;
-    }
-
-    public void setCapcoUserString(String capcoUserString) {
-        this.capcoUserString = capcoUserString;
-    }
-
-
+    /** get the read only  UserSecurityAttributes */
+    public UserSecurityAttributes getUserSecurityAttributes() { return userSecurityAttributes;  }
 
     @Override
     public String toString() {

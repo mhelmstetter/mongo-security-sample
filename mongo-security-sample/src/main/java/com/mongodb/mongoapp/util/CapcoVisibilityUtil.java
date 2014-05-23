@@ -8,14 +8,14 @@ import java.util.*;
  * <p>
  *    The goal of these utilities are to allow easy use of CAPCO specifications, and easy integration in other
  *    client software systems.  Our reference implementation needs a particular encoding of the CAPCO settings
- *    and we want to make it easy to convert into that format.
- *    Taking a simple case of TS or top-secret, a person with TS will have S C and U.  The lower level of this
+ *    fully spelled out.
+ *    Taking a simple case of TS or top-secret, a person with TS will have S C and U.  (The lower level of this
  *    reference implementation of the FLAC utility needs to have all capabilities spelled out
- *    in order to make database operations fast.
+ *    in order to make database operations fast.)
  * </p>
  *
  * <p>
- *    By using the convertJavaToEncodeCapcoVisibility method you can pass in high level capabilities in a concise manner
+ *    By using the expandCapcoVisibility method you can pass in high level capabilities in a concise manner
  *    which might match what you have stored in other systems, that will then be properly recursively Expanded.
  * </p>
  *
@@ -25,7 +25,7 @@ import java.util.*;
  *    Consider having to encode a Top Secret CAPCO setting, you can call this one call that will expand to
  *    lower levels as necessary:
  *    <tt>
- *        CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS"}) =>
+ *        UserSecurityAttributes.EncodingUtils.expandCapcoVisibility(new String[]{"c:TS"}) =>
  *           That call in fact under the covers expands to or generates:
  *
  *        [ { c:"TS" }, { c:"S" }, { c:"U" }, { c:"C" } ]   (( in javascript notation which is needed by the
@@ -39,7 +39,7 @@ import java.util.*;
  * </p>
  * <p>
  *     <tt>
- *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
+ *     UserSecurityAttributes.EncodingUtils.expandCapcoVisibility(new String[]{"c:TS", "c:S"})
  *          note here we deal with S being contained in TS
  *     </tt>
  *     generates:
@@ -50,7 +50,7 @@ import java.util.*;
  * </p>
  * <p>
  *     <tt>
- *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
+ *      UserSecurityAttributes.EncodingUtils.expandCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
  *     </tt>
  *     generates:
  *     <br/>
@@ -64,102 +64,8 @@ import java.util.*;
  */
 public class CapcoVisibilityUtil {
 
-    protected static final boolean EXPAND_CAPCO_AS_TREE_OF_VISIBILITY = true;
+    public static final boolean EXPAND_CAPCO_AS_TREE_OF_VISIBILITY = true;
 
-    /**
-     * Convert java array of simple strings like: "c:TS"  into an appropriate CapcoVisibilityString.
-     </tt>
-     * <p> <b>See Examples below for more details:</b>
-     * </p>
-     * <p>
-     *     <tt>
-     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
-     *         note here we deal with S being contained in TS
-     *     </tt>
-     *     generates:
-     *     <br/>
-     *     <tt>
-     *     "[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]"
-     *     </tt>
-     * </p>
-     * <p>
-     *     <tt>
-     *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
-     *     </tt>
-     *     generates:
-     *     <br/>
-     *     <tt>
-     *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
-     *     </tt>
-     * </p>
-     *
-     * <p> NOTES: we fully support generating lower level of TS S C and U  , for all others you need to expand yourself.</p>
-     *
-     * @param userCapcoVisibilityStrings
-     * @return
-     */
-    public static String convertJavaToEncodeCapcoVisibility(String[] userCapcoVisibilityStrings) {
-
-        return convertJavaToEncodeCapcoVisibility( ((userCapcoVisibilityStrings == null)
-                ? (List<String> ) null
-                : Arrays.asList(userCapcoVisibilityStrings)));
-
-    }
-
-    /**
-     * Convert java List of simple strings like: "c:TS"  into an appropriate CapcoVisibilityString.
-     </tt>
-     * <p> <b>See Examples below for more details:</b>
-     * </p>
-     * <p>
-     *     <tt>
-     *     CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS", "c:S"})
-     *         note here we deal with S being contained in TS
-     *     </tt>
-     *     generates:
-     *     <br/>
-     *     <tt>
-     *     "[ { c:\"TS\" }, { c:\"S\" }, { c:\"C\" }, { c:\"U\" } ]"
-     *     </tt>
-     * </p>
-     * <p>
-     *     <tt>
-     *      CapcoVisibilityUtil.convertJavaToEncodeCapcoVisibility(new String[]{"c:TS",  "sci:TK",  "sci:SI",  "sci:G",  "sci:HCS"})
-     *     </tt>
-     *     generates:
-     *     <br/>
-     *     <tt>
-     *      "[ { c:\"TS\" }, { c:\"S\" }, { c:\"U\" }, { c:\"C\" }, { sci:\"TK\" }, { sci:\"SI\" }, { sci:\"G\" }, { sci:\"HCS\" } ]";
-     *     </tt>
-     * </p>
-     *
-     * <p> NOTES: we fully support generating lower level of TS S C and U  , for all others you need to expand yourself.</p>
-     *
-     * @param userCapcoVisibilityStrings
-     * @return
-     */
-    public static String convertJavaToEncodeCapcoVisibility(List<String> userCapcoVisibilityStrings) {
-
-        StringBuilder stringBuilder = new StringBuilder();
-
-        boolean first = true;
-        stringBuilder.append("[ ");
-        userCapcoVisibilityStrings = recusivelyExpandCapcoVisibility(userCapcoVisibilityStrings);
-        if (userCapcoVisibilityStrings != null) {
-            for (String s : userCapcoVisibilityStrings) {
-                final String[] splitTerms = s.split(":");          // takes a term like c:TS
-                if (!first) {
-                    stringBuilder.append(", ");
-                }
-                first = false;
-                stringBuilder.append(String.format("{ %s:\"%s\" }", splitTerms[0], splitTerms[1]));
-            }
-        }
-        stringBuilder.append(" ]");
-
-        return stringBuilder.toString();
-
-    }
 
     /** Recursively Expand Capco Visibility, as c:TS implies c:S etc
      *
@@ -167,7 +73,7 @@ public class CapcoVisibilityUtil {
      *        lower levels
      * @return  all user CAPCO entries with duplicates suppressed.
      */
-    private static List<String> recusivelyExpandCapcoVisibility(List<String> userCapcoVisibilityStrings) {
+    public static List<String> recusivelyExpandCapcoVisibility(List<String> userCapcoVisibilityStrings) {
         if (userCapcoVisibilityStrings == null) return null;
 
         HashSet<String> capco = new LinkedHashSet<String>();
@@ -199,27 +105,5 @@ public class CapcoVisibilityUtil {
         return new ArrayList<String>( capco );
     }
 
-    ////
-    // In place of spring, we can role our own ThreadLocal CAPCO Credentials management, if you
-    // were not using SPRING security.
-    ////
-    /*    private static ThreadLocal<String> userCapcoCredentials = new ThreadLocal<String>() {
-        @Override
-        protected String initialValue() {
-            // lookup user CAPCO level
-            String userCAPCO1 = "";
-            String userCAPCO2 = "";
 
-            return new String();
-        }
-    };
-
-
-
-    public static String getCurrentUserCapcoCredentials() {
-        // this may fetch from SPRING the user credentials or from your DB
-
-        return null;
-
-    } */
 }

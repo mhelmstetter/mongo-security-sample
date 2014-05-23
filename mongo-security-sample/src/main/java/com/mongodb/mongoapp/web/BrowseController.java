@@ -54,7 +54,7 @@ public class BrowseController {
             capcoUser = CapcoUser.TestCapcoUsers.UNCLASS_USER;
         }
 
-        String capcoVisibilityString = capcoUser.getCapcoUserString();
+        String capcoVisibilityString = capcoUser.getUserSecurityAttributes().getCapcoUserString();
         personRepository.setCapcoVisibilityString(capcoVisibilityString);
 
         Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
@@ -93,7 +93,7 @@ public class BrowseController {
             capcoUser = CapcoUser.TestCapcoUsers.UNCLASS_USER;
         }
 
-        String capcoVisibilityString = capcoUser.getCapcoUserString();
+        String capcoVisibilityString = capcoUser.getUserSecurityAttributes().getCapcoUserString();
         personRepository.setCapcoVisibilityString(capcoVisibilityString);
 
         BasicDBObject criteria = new BasicDBObject("lastName", "Best");
@@ -115,7 +115,7 @@ public class BrowseController {
     public ModelAndView browse(Map<String, Object> model) {
 
         CapcoUser currentUser = userContext.getCurrentUser();
-        String capcoVisibilityString = currentUser.getCapcoUserString();
+        String capcoVisibilityString = currentUser.getUserSecurityAttributes().getCapcoUserString();
         personRepository.setCapcoVisibilityString(capcoVisibilityString); // TODO: later on the findPersons will fetch
 
         Iterable<Person> persons = personRepository.findPersons(new PageRequest(1, 100));
